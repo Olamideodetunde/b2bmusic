@@ -16,7 +16,8 @@ import {
   Radio,
   Play,
   Pause,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles
 } from 'lucide-react';
 import { useAudio } from '../audio/GlobalAudioContext';
 
@@ -41,6 +42,16 @@ const OVERLAYS: OverlayOption[] = [
     tagline: 'Pioneer DJ Console & Hardware Synthesizers',
     projectCredit: 'Aura of Silicon · Sequential Prophet-6 Arp',
     bpmKey: '122 BPM · D Major',
+  },
+  {
+    id: 'festival',
+    name: 'Festival Stage',
+    category: 'Stadium & Global Anthems',
+    src: '/banners/banner-festival-stage.jpg',
+    icon: <Sparkles className="w-4 h-4" />,
+    tagline: 'Monumental Live Stage & Crowd Energy',
+    projectCredit: 'Titan Stadium · Electric Guitar & Synth Anthem',
+    bpmKey: '130 BPM · E Minor',
   },
   {
     id: 'fireworks',
@@ -81,25 +92,25 @@ export function HeroSection() {
 
   return (
     <section className="relative overflow-hidden pt-24 pb-20 px-4 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 w-full">
-      {/* ─── FLUID AMBIENT IMAGE BACKDROP BLEED ─── */}
+      {/* ─── FLUID AMBIENT IMAGE BACKDROP BLEED (TONED OUT FOR NATURAL BREATHING & LUMINANCE) ─── */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         {/* Active Banner Image with Fade Transition */}
         <img
           key={activeOverlay.id}
           src={activeOverlay.src}
           alt={activeOverlay.name}
-          className="w-full h-full object-cover object-center filter brightness-[0.45] contrast-125 saturate-125 transition-all duration-1000 scale-105 animate-fade-in"
+          className="w-full h-full object-cover object-center filter brightness-[0.62] contrast-105 saturate-110 transition-all duration-1000 scale-105 animate-fade-in"
         />
 
-        {/* Ambient Gradient Bleed: Merges seamlessly into the black void */}
-        <div className="absolute inset-0 bg-gradient-to-b from-obsidian-950/90 via-obsidian-950/70 to-obsidian-950" />
-        <div className="absolute inset-0 bg-gradient-to-r from-obsidian-950/95 via-transparent to-obsidian-950/95" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(220,38,38,0.25)_0%,transparent_75%)]" />
+        {/* Ambient Gradient Bleed: Softened masks so the image breathes cleanly while text stays razor-sharp */}
+        <div className="absolute inset-0 bg-gradient-to-b from-obsidian-950/75 via-obsidian-950/40 to-obsidian-950" />
+        <div className="absolute inset-0 bg-gradient-to-r from-obsidian-950/80 via-transparent to-obsidian-950/80" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(220,38,38,0.12)_0%,transparent_75%)]" />
       </div>
 
-      {/* Floating Ambient Glowing Energy Orbs */}
-      <div className="absolute top-20 right-1/4 w-[500px] h-[500px] rounded-full bg-crimson-600/15 blur-[160px] pointer-events-none -z-0" />
-      <div className="absolute bottom-10 left-10 w-[600px] h-[600px] rounded-full bg-crimson-900/15 blur-[180px] pointer-events-none -z-0" />
+      {/* Floating Ambient Glowing Energy Orbs - Softened & toned out */}
+      <div className="absolute top-20 right-1/4 w-[500px] h-[500px] rounded-full bg-crimson-600/[0.08] blur-[180px] pointer-events-none -z-0" />
+      <div className="absolute bottom-10 left-10 w-[600px] h-[600px] rounded-full bg-crimson-900/[0.08] blur-[200px] pointer-events-none -z-0" />
 
       <div className="w-full max-w-[1600px] mx-auto relative z-10">
         

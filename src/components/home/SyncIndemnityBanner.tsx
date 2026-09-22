@@ -8,14 +8,14 @@ export function SyncIndemnityBanner() {
       {/* Background Image with Cinematic Dark Gradient Vignette Bleed */}
       <div className="absolute inset-0 z-0">
         <img
-          src="/banners/banner-spark-energy.jpg"
-          alt="Sparks energy atmosphere"
-          className="w-full h-full object-cover object-center filter brightness-[0.22] contrast-125 saturate-110"
+          src="/banners/banner-festival-stage.jpg"
+          alt="Festival stage concert and stadium lights"
+          className="w-full h-full object-cover object-center filter brightness-[0.35] contrast-115 saturate-115"
         />
-        {/* Layered Obsidian & Crimson Gradients to seamlessly merge with background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-obsidian-950 via-obsidian-950/90 to-obsidian-950/70" />
+        {/* Layered Obsidian & Warm Amber/Crimson Gradients to seamlessly merge with background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-obsidian-950 via-obsidian-950/85 to-obsidian-950/60" />
         <div className="absolute inset-0 bg-gradient-to-t from-obsidian-950 via-transparent to-obsidian-950" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(220,38,38,0.25),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(220,38,38,0.18),transparent_60%)]" />
       </div>
 
       {/* Content Container */}
