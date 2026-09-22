@@ -6,6 +6,8 @@ import { sendPublishAlertEmail } from '@/lib/email/brevo';
 import { getSiteUrl } from '@/lib/utils';
 
 const IngestSchema = z.object({
+  id: z.coerce.number().optional(),
+  slug: z.string().optional(),
   title: z.string().min(1, 'Title is required'),
   targetKeyword: z.string().min(1, 'Target keyword is required'),
   bpm: z.coerce.number().int().min(40).max(260),
@@ -47,8 +49,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Upsert track record into Neon Postgres
-    const track = await upsertTrackFromIngest(parsed.data);
+    // 3. Idempotent Upsert track record into Neon Postgres
+    const { track, isUpdate } = await upsertTrackFromIngest(parsed.data);
 
     // 4. Trigger Incremental Static Regeneration (ISR)
     const siteUrl = getSiteUrl();
@@ -63,26 +65,33 @@ export async function POST(request: NextRequest) {
       console.warn('Revalidation notice:', revalErr);
     }
 
-    // 5. Send Brevo publish notification email to admin
-    try {
-      await sendPublishAlertEmail(track.title, track.slug, trackPageUrl);
-    } catch (mailErr) {
-      console.warn('Brevo email notice:', mailErr);
+    // 5. Send Brevo publish notification email to admin on initial create
+    if (!isUpdate) {
+      try {
+        await sendPublishAlertEmail(track.title, track.slug, trackPageUrl);
+      } catch (mailErr) {
+        console.warn('Brevo email notice:', mailErr);
+      }
     }
 
     // 6. Return response to Make.com for Google Sheets status write-back
     return NextResponse.json({
       success: true,
-      message: 'Track published successfully with ISR',
+      action: isUpdate ? 'updated' : 'created',
+      message: isUpdate
+        ? `Track "${track.title}" updated successfully and page revalidated`
+        : `New track "${track.title}" published successfully with ISR`,
       data: {
         id: track.id,
         title: track.title,
         slug: track.slug,
         targetKeyword: track.targetKeyword,
         liveUrl: trackPageUrl,
+        isUpdate,
         publishedAt: track.publishedAt,
+        updatedAt: track.updatedAt,
       }
-    }, { status: 201 });
+    }, { status: isUpdate ? 200 : 201 });
 
   } catch (error: any) {
     console.error('Ingestion API Error:', error);
