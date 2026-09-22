@@ -6,6 +6,7 @@ import { StudioPreviewSuite } from '@/components/home/StudioPreviewSuite';
 import { CuratedCollections } from '@/components/home/CuratedCollections';
 import { SyncIndemnityBanner } from '@/components/home/SyncIndemnityBanner';
 import { AgencyScaleBanner } from '@/components/home/AgencyScaleBanner';
+import { GlobalBroadcastBanner } from '@/components/home/GlobalBroadcastBanner';
 import Link from 'next/link';
 import {
   Mic2,
@@ -59,6 +60,9 @@ export default async function HomePage() {
 
       {/* ─── CURATED COLLECTIONS / MOOD PALETTES ─── */}
       <CuratedCollections />
+
+      {/* ─── WORLDWIDE STADIUM & BROADCAST BANNER ─── */}
+      <GlobalBroadcastBanner />
 
       {/* ─── WHY B2B PRODUCTION MUSIC (BOUNDLESS ULTRA-MODERN EDITORIAL) ─── */}
       <section className="py-24 sm:py-28 px-4 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 relative overflow-hidden w-full border-t border-white/[0.06]">

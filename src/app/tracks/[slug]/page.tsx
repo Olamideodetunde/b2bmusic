@@ -140,50 +140,54 @@ export default async function TrackLandingPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Audio Player */}
-      <div className="mb-8">
-        <AudioPlayer track={track} />
+      {/* ─── 2-COLUMN STUDIO WORKSPACE (MUSICBED & PREMIUMBEAT STANDARD) ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* LEFT COLUMN (8 cols): Audio Deck, Deliverable Stems, Production Notes, Cue Sheet */}
+        <div className="lg:col-span-8 space-y-8">
+          {/* Interactive Waveform Audio Player Deck */}
+          <AudioPlayer track={track} />
+
+          {/* Description / Broadcast Cue Sheet / Sync Specs */}
+          <DescriptionBlock
+            description={track.description}
+            useCases={track.useCases}
+            targetKeyword={track.targetKeyword}
+            syncMeta={track.syncMeta}
+            trackTitle={track.title}
+            bpm={track.bpm}
+            musicalKey={track.musicalKey}
+          />
+
+          {/* Related Tracks */}
+          {relatedTracks.length > 0 && (
+            <section className="pt-6 border-t border-white/10">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="font-syne text-xl font-bold text-white">More in {track.genre}</h3>
+                  <p className="text-xs text-zinc-400">Similar commercial cleared tracks for your production</p>
+                </div>
+                <Link
+                  href={`/genres/${track.genre.toLowerCase().replace(/\s+/g, '-')}`}
+                  className="text-xs font-semibold text-crimson-400 hover:text-crimson-300 transition-colors flex items-center gap-1"
+                >
+                  <span>View all {track.genre}</span>
+                  <span>&rarr;</span>
+                </Link>
+              </div>
+              <div className="space-y-3">
+                {relatedTracks.map((rel) => (
+                  <TrackCard key={rel.id} track={rel} />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN (4 cols): Sticky Licensing & Checkout Chassis */}
+        <div className="lg:col-span-4 sticky top-24 space-y-6">
+          <CheckoutCTA track={track} layout="sidebar" />
+        </div>
       </div>
-
-      {/* Checkout CTA */}
-      <div className="mb-8">
-        <CheckoutCTA track={track} />
-      </div>
-
-      {/* Description / Sync Specs */}
-      <DescriptionBlock
-        description={track.description}
-        useCases={track.useCases}
-        targetKeyword={track.targetKeyword}
-        syncMeta={track.syncMeta}
-        trackTitle={track.title}
-        bpm={track.bpm}
-        musicalKey={track.musicalKey}
-      />
-
-      {/* Related Tracks */}
-      {relatedTracks.length > 0 && (
-        <section className="mt-16 pt-8 border-t border-white/10">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="font-syne text-xl font-bold text-white">More in {track.genre}</h3>
-              <p className="text-xs text-zinc-400">Similar commercial cleared tracks for your production</p>
-            </div>
-            <Link
-              href={`/genres/${track.genre.toLowerCase().replace(/\s+/g, '-')}`}
-              className="text-xs font-semibold text-crimson-400 hover:text-crimson-300 transition-colors flex items-center gap-1"
-            >
-              <span>View all {track.genre}</span>
-              <span>&rarr;</span>
-            </Link>
-          </div>
-          <div className="space-y-3">
-            {relatedTracks.map((rel) => (
-              <TrackCard key={rel.id} track={rel} />
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }

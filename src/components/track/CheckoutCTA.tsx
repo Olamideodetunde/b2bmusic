@@ -3,14 +3,16 @@
 import React, { useState, Suspense } from 'react';
 import { Track } from '@/lib/db/types';
 import { formatPrice } from '@/lib/utils';
-import { CheckCircle2, Lock, ArrowRight, Loader2, Download, ShieldCheck, Zap, Globe, Tv } from 'lucide-react';
+import { CheckCircle2, Lock, ArrowRight, Loader2, Download, ShieldCheck, Zap, Globe, Tv, Check } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
 interface CheckoutCTAProps {
   track: Track;
+  layout?: 'sidebar' | 'grid';
+  className?: string;
 }
 
-function CheckoutCTAContent({ track }: CheckoutCTAProps) {
+function CheckoutCTAContent({ track, layout = 'sidebar', className = '' }: CheckoutCTAProps) {
   const [selectedTier, setSelectedTier] = useState<'standard' | 'agency' | 'broadcast'>('agency');
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
@@ -45,18 +47,18 @@ function CheckoutCTAContent({ track }: CheckoutCTAProps) {
 
   if (isSuccess) {
     return (
-      <div className="glass-panel border-emerald-500/40 rounded-3xl p-8 text-center my-8 shadow-2xl shadow-emerald-950/40">
+      <div className="glass-panel border-emerald-500/40 rounded-3xl p-6 sm:p-8 text-center shadow-2xl shadow-emerald-950/40">
         <div className="w-14 h-14 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/30">
           <CheckCircle2 className="w-8 h-8" />
         </div>
-        <h3 className="font-syne text-2xl font-black text-white mb-2">Synchronization License Issued</h3>
-        <p className="text-sm text-zinc-300 max-w-lg mx-auto mb-6">
+        <h3 className="font-syne text-xl sm:text-2xl font-black text-white mb-2">Synchronization License Issued</h3>
+        <p className="text-xs sm:text-sm text-zinc-300 max-w-lg mx-auto mb-6">
           Your perpetual sync agreement for <strong>&ldquo;{track.title}&rdquo;</strong> is confirmed.
           Master WAV, isolated stems, and the indemnified cue sheet have been prepared.
         </p>
-        <div className="inline-flex items-center gap-2 btn-crimson text-white font-bold px-7 py-3.5 rounded-xl cursor-pointer shadow-xl shadow-crimson-600/40">
-          <Download className="w-5 h-5" />
-          <span>Download Master Production Package (.ZIP)</span>
+        <div className="inline-flex items-center gap-2 btn-crimson text-white font-bold px-6 py-3 rounded-xl cursor-pointer shadow-xl shadow-crimson-600/40 text-xs sm:text-sm">
+          <Download className="w-4 h-4" />
+          <span>Download Master Package (.ZIP)</span>
         </div>
       </div>
     );
@@ -69,115 +71,124 @@ function CheckoutCTAContent({ track }: CheckoutCTAProps) {
       icon: <Globe className="w-4 h-4" />,
       color: 'text-zinc-300',
       badge: null,
-      description: 'YouTube, podcasts, social reels, internal decks, and websites.',
+      description: 'YouTube, podcasts, social reels, internal corporate decks & websites.',
       features: [
         'Unlimited online views & streams',
-        'Full Master WAV (24-bit / 48kHz)',
-        'YouTube Content ID Whitelist',
+        'Master 24-bit WAV & 320kbps MP3',
+        'YouTube Content ID Whitelisting',
       ],
-      footer: 'Perpetual single-project license',
+      footer: 'Perpetual single-project clearance',
     },
     {
       key: 'agency' as const,
-      label: 'Broadcast & Sync',
+      label: 'Commercial & Ads',
       icon: <Zap className="w-4 h-4" />,
       color: 'text-crimson-400',
-      badge: 'Most Popular',
-      description: 'Client work, paid ads up to $50k spend, trade shows, and promos.',
+      badge: 'Recommended',
+      description: 'Client projects, paid digital ads (Meta/TikTok/Google), trade shows, promos.',
       features: [
         'All Web rights + Paid Digital Ads',
-        'Full Stems Archive Included',
-        'All Alt-Mixes & Cutdowns (:60, :30)',
-        'Client handover clearance rights',
+        'Full Isolated Stems Archive included',
+        'All Alt-Mixes & Cutdowns (:60, :30, :15)',
+        'Full agency client transfer permitted',
       ],
-      footer: 'Agency client transfer permitted',
+      footer: 'Agency client handover permitted',
     },
     {
       key: 'broadcast' as const,
-      label: 'Full Buyout',
+      label: 'Full Buyout & TV',
       icon: <Tv className="w-4 h-4" />,
       color: 'text-purple-400',
       badge: null,
-      description: 'TV commercials, Netflix / OTT streaming, theatrical films, gaming.',
+      description: 'Linear TV commercials, Netflix/OTT streaming, theatrical films, video games.',
       features: [
         'Worldwide TV & OTT Synchronization',
-        'Unlimited media / ad spend',
-        'Full Stems + 30s / 60s Broadcast Cuts',
-        'Complete legal indemnification',
+        'Unlimited media spend & broadcast reach',
+        'Full Stems + 30s/60s Broadcast Cuts',
+        'Full legal indemnification & cue-sheet filing',
       ],
       footer: 'Official Cue Sheet & ISRC registration',
     },
   ];
 
   return (
-    <div className="glass-panel rounded-3xl p-6 sm:p-8 relative my-8 shadow-2xl overflow-hidden">
-      {/* Ambient Crimson Spotlight */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-crimson-600/10 rounded-full blur-3xl pointer-events-none" />
+    <div className={`glass-panel rounded-3xl p-5 sm:p-6 relative shadow-2xl overflow-hidden border border-white/10 ${className}`}>
+      {/* Ambient Crimson Glow */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-crimson-600/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7 pb-5 border-b border-white/[0.08] relative z-10">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-mono font-bold text-crimson-400 uppercase tracking-widest">
-              Direct Commercial Synchronization
-            </span>
-            <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/25 font-medium">
-              100% Pre-Cleared
-            </span>
-          </div>
-          <h2 className="font-syne text-2xl sm:text-3xl font-black text-white tracking-tight drop-shadow-sm">
-            Select Your Production Rights
-          </h2>
+      {/* Top Header */}
+      <div className="pb-4 mb-4 border-b border-white/[0.08] relative z-10">
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <span className="text-[11px] font-mono font-bold text-crimson-400 uppercase tracking-widest">
+            Commercial Sync License
+          </span>
+          <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/25 font-bold">
+            100% Pre-Cleared
+          </span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-zinc-300 bg-obsidian-900/80 px-3.5 py-2 rounded-xl border border-white/10 self-start sm:self-auto backdrop-blur-md">
-          <Lock className="w-3.5 h-3.5 text-crimson-500" />
-          <span>Instant Checkout via Stripe • No Subscription</span>
-        </div>
+        <h3 className="font-syne text-xl sm:text-2xl font-black text-white tracking-tight">
+          Select Your Rights
+        </h3>
+        <p className="text-xs text-zinc-400 mt-1 font-jakarta">
+          Perpetual license. Zero recurring subscription fees.
+        </p>
       </div>
 
-      {/* 3-Tier Matrix */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-7 relative z-10">
+      {/* 3 Selectable Tier Cards (Vertical Stack for Musicbed / PremiumBeat Sidebar feel) */}
+      <div className="space-y-3 mb-5 relative z-10">
         {tiers.map((tier) => {
           const isSelected = selectedTier === tier.key;
           return (
             <div
               key={tier.key}
               onClick={() => setSelectedTier(tier.key)}
-              className={`cursor-pointer rounded-2xl p-6 border transition-all flex flex-col justify-between relative backdrop-blur-xl ${
+              className={`cursor-pointer rounded-2xl p-4 border transition-all relative ${
                 isSelected
-                  ? 'border-crimson-500 bg-crimson-600/15 shadow-2xl shadow-crimson-600/25 scale-[1.02]'
+                  ? 'border-crimson-500 bg-crimson-600/15 shadow-xl shadow-crimson-600/20 ring-1 ring-crimson-500'
                   : 'border-white/10 bg-obsidian-900/60 hover:border-white/20 hover:bg-obsidian-850/80'
               }`}
             >
               {tier.badge && (
-                <div className="absolute -top-3 right-4 bg-crimson-600 text-white text-[10px] font-black uppercase tracking-wider px-3 py-0.5 rounded-full shadow-lg shadow-crimson-600/40">
+                <div className="absolute -top-2.5 right-4 bg-crimson-600 text-white text-[9px] font-mono font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-md shadow-crimson-600/50">
                   {tier.badge}
                 </div>
               )}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className={`${tier.color}`}>{tier.icon}</span>
-                  <span className={`font-jakarta text-xs font-bold uppercase tracking-wider ${tier.color}`}>
+
+              {/* Tier Header Line */}
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <div className="flex items-center gap-2">
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
+                    isSelected ? 'border-crimson-400 bg-crimson-500 text-white' : 'border-zinc-500 bg-obsidian-900'
+                  }`}>
+                    {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                  </div>
+                  <span className={`text-xs font-bold uppercase tracking-wider font-syne ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
                     {tier.label}
                   </span>
-                  {isSelected && <span className="ml-auto w-2 h-2 rounded-full bg-crimson-500 animate-ping" />}
                 </div>
-                <div className="font-mono text-3xl font-black text-white mb-1 drop-shadow-sm">
+                <div className="font-mono text-lg font-black text-white">
                   {formatPrice(tierPrices[tier.key])}
                 </div>
-                <p className="text-xs text-zinc-400 mb-4 leading-relaxed">{tier.description}</p>
-                <ul className="space-y-2 text-xs text-zinc-300">
+              </div>
+
+              <p className="text-[11px] text-zinc-400 leading-relaxed pl-6">
+                {tier.description}
+              </p>
+
+              {/* Active Features Breakdown */}
+              {isSelected && (
+                <div className="mt-3 pt-3 border-t border-white/[0.08] pl-6 space-y-1.5">
                   {tier.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-crimson-500 shrink-0 mt-0.5" />
+                    <div key={f} className="flex items-start gap-1.5 text-[11px] text-zinc-300">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-crimson-400 shrink-0 mt-0.5" />
                       <span>{f}</span>
-                    </li>
+                    </div>
                   ))}
-                </ul>
-              </div>
-              <div className="mt-5 pt-3 border-t border-white/[0.08] text-[11px] text-zinc-500">
-                {tier.footer}
-              </div>
+                  <div className="text-[10px] font-mono text-zinc-500 pt-1">
+                    ✓ {tier.footer}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
@@ -187,41 +198,42 @@ function CheckoutCTAContent({ track }: CheckoutCTAProps) {
       <button
         onClick={handleCheckout}
         disabled={loading}
-        className="w-full py-4 px-6 rounded-2xl btn-crimson disabled:opacity-50 text-white font-extrabold text-base flex items-center justify-center gap-3 transition-all shadow-2xl shadow-crimson-600/40 relative z-10"
+        className="w-full py-3.5 px-5 rounded-2xl btn-crimson disabled:opacity-50 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-2xl shadow-crimson-600/40 relative z-10 hover:scale-[1.02]"
       >
         {loading ? (
           <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span>Securing Licensing Session...</span>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Connecting Stripe Checkout...</span>
           </>
         ) : (
           <>
-            <span>License &amp; Download Instantly</span>
-            <span className="font-mono font-normal opacity-90">
+            <span>License &amp; Download</span>
+            <span className="font-mono font-normal opacity-95">
               ({formatPrice(tierPrices[selectedTier])})
             </span>
-            <ArrowRight className="w-5 h-5" />
+            <ArrowRight className="w-4 h-4" />
           </>
         )}
       </button>
 
-      {/* Trust Indicators */}
-      <div className="mt-5 pt-4 border-t border-white/[0.08] flex flex-wrap items-center justify-between text-xs text-zinc-400 gap-2 relative z-10">
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1 text-emerald-400 font-medium">
-            <ShieldCheck className="w-4 h-4" /> 100% Direct Pre-Cleared
-          </span>
-          <span>•</span>
-          <span>No CMO / PRO Collection Entanglements</span>
-          <span className="hidden sm:inline">•</span>
-          <span className="hidden sm:inline">Perpetual Worldwide Rights</span>
+      {/* Trust & Guarantee Indicators */}
+      <div className="mt-4 pt-3.5 border-t border-white/[0.08] space-y-2 text-[11px] text-zinc-400 relative z-10">
+        <div className="flex items-center gap-2 text-zinc-300">
+          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>100% Pre-Cleared Worldwide Sync</span>
         </div>
-        <a
-          href="mailto:licensing@b2bproductionmusic.com?subject=Enterprise%20Custom%20Sync%20Inquiry"
-          className="text-crimson-400 hover:text-crimson-300 font-medium underline"
-        >
-          Need Enterprise Buyout?
-        </a>
+        <div className="flex items-center gap-2">
+          <Lock className="w-3.5 h-3.5 text-crimson-400 shrink-0" />
+          <span>Instant WAV + Stems Download via Stripe</span>
+        </div>
+        <div className="pt-1 text-center">
+          <a
+            href="mailto:licensing@b2bproductionmusic.com?subject=Enterprise%20Custom%20Sync%20Inquiry"
+            className="text-crimson-400 hover:text-crimson-300 font-mono text-[10px] underline"
+          >
+            Need custom Enterprise Buyout?
+          </a>
+        </div>
       </div>
     </div>
   );
@@ -230,7 +242,7 @@ function CheckoutCTAContent({ track }: CheckoutCTAProps) {
 export function CheckoutCTA(props: CheckoutCTAProps) {
   return (
     <Suspense fallback={
-      <div className="glass-panel rounded-3xl p-8 text-center text-zinc-400 animate-pulse">
+      <div className="glass-panel rounded-3xl p-6 text-center text-zinc-400 animate-pulse">
         Loading commercial sync licensing options...
       </div>
     }>

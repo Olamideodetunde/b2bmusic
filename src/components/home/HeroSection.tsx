@@ -17,7 +17,8 @@ import {
   Play,
   Pause,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  Globe
 } from 'lucide-react';
 import { useAudio } from '../audio/GlobalAudioContext';
 
@@ -33,6 +34,16 @@ interface OverlayOption {
 }
 
 const OVERLAYS: OverlayOption[] = [
+  {
+    id: 'paris',
+    name: 'Paris Live Arena',
+    category: 'Worldwide Arena & TV Broadcast',
+    src: '/banners/banner-paris-concert.jpg',
+    icon: <Globe className="w-4 h-4" />,
+    tagline: 'Eiffel Concert Stage & Stadium Atmosphere',
+    projectCredit: 'Eiffel Nocturne · Live Drums & Cinematic Strings',
+    bpmKey: '124 BPM · G Minor',
+  },
   {
     id: 'dj',
     name: 'DJ Producer',
@@ -92,20 +103,20 @@ export function HeroSection() {
 
   return (
     <section className="relative overflow-hidden pt-24 pb-20 px-4 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 w-full">
-      {/* ─── FLUID AMBIENT IMAGE BACKDROP BLEED (TONED OUT FOR NATURAL BREATHING & LUMINANCE) ─── */}
+      {/* ─── FLUID AMBIENT IMAGE BACKDROP (TONED OUT FOR NATURAL BREATHING & LUMINANCE) ─── */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         {/* Active Banner Image with Fade Transition */}
         <img
           key={activeOverlay.id}
           src={activeOverlay.src}
           alt={activeOverlay.name}
-          className="w-full h-full object-cover object-center filter brightness-[0.62] contrast-105 saturate-110 transition-all duration-1000 scale-105 animate-fade-in"
+          className="w-full h-full object-cover object-center filter brightness-[0.78] contrast-105 saturate-110 transition-all duration-1000 scale-105 animate-fade-in"
         />
 
-        {/* Ambient Gradient Bleed: Softened masks so the image breathes cleanly while text stays razor-sharp */}
-        <div className="absolute inset-0 bg-gradient-to-b from-obsidian-950/75 via-obsidian-950/40 to-obsidian-950" />
-        <div className="absolute inset-0 bg-gradient-to-r from-obsidian-950/80 via-transparent to-obsidian-950/80" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(220,38,38,0.12)_0%,transparent_75%)]" />
+        {/* Ambient Gradient Bleed: Toned out for natural breathing, clarity and photographic punch */}
+        <div className="absolute inset-0 bg-gradient-to-b from-obsidian-950/50 via-transparent to-obsidian-950/95" />
+        <div className="absolute inset-0 bg-gradient-to-r from-obsidian-950/60 via-transparent to-obsidian-950/60" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(220,38,38,0.08)_0%,transparent_75%)]" />
       </div>
 
       {/* Floating Ambient Glowing Energy Orbs - Softened & toned out */}
@@ -164,10 +175,10 @@ export function HeroSection() {
                 key={activeOverlay.id}
                 src={activeOverlay.src}
                 alt={activeOverlay.name}
-                className="w-full h-full object-cover object-center filter brightness-[0.7] contrast-115 group-hover:scale-105 transition-all duration-700 ease-out"
+                className="w-full h-full object-cover object-center filter brightness-[0.82] contrast-110 group-hover:scale-105 transition-all duration-700 ease-out"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-obsidian-950 via-obsidian-950/40 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-r from-obsidian-950/80 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-obsidian-950 via-obsidian-950/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-obsidian-950/60 via-transparent to-transparent" />
             </div>
 
             {/* Top Bar of Active Showcase */}
