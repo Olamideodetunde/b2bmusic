@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe/client';
 import { sendPurchaseReceiptEmail } from '@/lib/email/brevo';
+import { getSiteUrl } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   const payload = await request.text();
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
         : 'Web & Social Perpetual ($10)';
     
     // In production, generate a signed S3/R2 download URL for the master files
-    const downloadUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/downloads/${session.metadata?.trackSlug || 'licensed'}`;
+    const downloadUrl = `${getSiteUrl()}/downloads/${session.metadata?.trackSlug || 'licensed'}`;
 
     if (customerEmail) {
       await sendPurchaseReceiptEmail(customerEmail, trackTitle, tier, downloadUrl);

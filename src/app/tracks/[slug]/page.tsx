@@ -9,11 +9,13 @@ import { SchemaJsonLd } from '@/components/track/SchemaJsonLd';
 import { TrackCard } from '@/components/hub/TrackCard';
 import Link from 'next/link';
 import { ChevronRight, Radio } from 'lucide-react';
+import { getSiteUrl } from '@/lib/utils';
 
 interface PageProps {
   params: { slug: string };
 }
 
+// Incremental Static Regeneration (ISR) configuration
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
@@ -23,12 +25,16 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const track = await getTrackBySlug(params.slug);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://b2bproductionmusic.com';
+  const siteUrl = getSiteUrl();
 
   if (!track) return { title: 'Track Not Found' };
 
   const title = `${track.title} | ${track.targetKeyword} (Commercial Sync License)`;
   const description = `${track.description.slice(0, 155)}... 100% pre-cleared sync license with master WAV and stems.`;
+
+  const coverUrl = track.coverImageUrl
+    ? (track.coverImageUrl.startsWith('http') ? track.coverImageUrl : `${siteUrl}${track.coverImageUrl.startsWith('/') ? '' : '/'}${track.coverImageUrl}`)
+    : `${siteUrl}/images/default-track-og.jpg`;
 
   return {
     title,
@@ -40,20 +46,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url: `${siteUrl}/tracks/${track.slug}`,
       siteName: 'B2B Production Music',
       type: 'music.song',
-      images: [{ url: track.coverImageUrl || `${siteUrl}/images/default-track-og.jpg`, width: 1200, height: 630, alt: track.title }],
+      images: [{ url: coverUrl, width: 1200, height: 630, alt: track.title }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: [track.coverImageUrl || `${siteUrl}/images/default-track-og.jpg`],
+      images: [coverUrl],
     },
   };
 }
 
 export default async function TrackLandingPage({ params }: PageProps) {
   const track = await getTrackBySlug(params.slug);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://b2bproductionmusic.com';
+  const siteUrl = getSiteUrl();
 
   if (!track) notFound();
 
@@ -121,14 +127,14 @@ export default async function TrackLandingPage({ params }: PageProps) {
               {track.title}
             </h1>
             <p className="text-zinc-400 text-xs sm:text-sm mt-2 max-w-2xl leading-relaxed font-jakarta">
-              Master commercial synchronization track tailored for {track.useCases.slice(0, 3).join(', ')}. Includes full stems and broadcast cutdowns.
+              Master commercial synchronization track tailored for {(track.useCases || []).slice(0, 3).join(', ')}. Includes full stems and broadcast cutdowns.
             </p>
 
             <BadgeCluster
               bpm={track.bpm}
               musicalKey={track.musicalKey}
               genre={track.genre}
-              moods={track.moods}
+              moods={track.moods || []}
             />
           </div>
         </div>

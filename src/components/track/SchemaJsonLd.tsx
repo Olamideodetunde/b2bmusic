@@ -27,12 +27,16 @@ export function SchemaJsonLd({ track, siteUrl }: SchemaJsonLdProps) {
   };
 
   // 2. Product Structured Data with 3 Tiers
+  const coverUrl = track.coverImageUrl
+    ? (track.coverImageUrl.startsWith('http') ? track.coverImageUrl : `${siteUrl}${track.coverImageUrl.startsWith('/') ? '' : '/'}${track.coverImageUrl}`)
+    : `${siteUrl}/images/default-cover.jpg`;
+
   const productSchema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: `${track.title} - Commercial Synchronization License`,
     description: track.description,
-    image: track.coverImageUrl || `${siteUrl}/images/default-cover.jpg`,
+    image: coverUrl,
     category: `Production Music > ${track.genre}`,
     offers: [
       {

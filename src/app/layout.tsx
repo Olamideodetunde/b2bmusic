@@ -5,6 +5,7 @@ import { AudioProvider } from "@/components/audio/GlobalAudioContext";
 import { Navbar } from "@/components/navigation/Navbar";
 import { Footer } from "@/components/navigation/Footer";
 import { MiniPlayerBar } from "@/components/audio/MiniPlayerBar";
+import { getSiteUrl } from "@/lib/utils";
 
 // ── Display / Headers: Syne ──────────────────────────────
 const syne = Syne({
@@ -31,7 +32,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://b2bproductionmusic.com'),
+  metadataBase: new URL(getSiteUrl()),
   title: {
     default: "B2B Production Music | Commercial Music Licensing for Video & Media",
     template: "%s | B2B Production Music",

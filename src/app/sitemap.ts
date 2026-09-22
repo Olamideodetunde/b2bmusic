@@ -1,8 +1,9 @@
 import { MetadataRoute } from 'next';
 import { getAllTracks } from '@/lib/db';
+import { getSiteUrl } from '@/lib/utils';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://b2bproductionmusic.com';
+  const siteUrl = getSiteUrl();
   const tracks = await getAllTracks();
 
   // 1. Core pages

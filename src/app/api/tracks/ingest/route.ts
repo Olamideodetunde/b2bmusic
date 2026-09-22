@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { upsertTrackFromIngest } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { sendPublishAlertEmail } from '@/lib/email/brevo';
+import { getSiteUrl } from '@/lib/utils';
 
 const IngestSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
     const track = await upsertTrackFromIngest(parsed.data);
 
     // 4. Trigger Incremental Static Regeneration (ISR)
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const siteUrl = getSiteUrl();
     const trackPageUrl = `${siteUrl}/tracks/${track.slug}`;
 
     try {

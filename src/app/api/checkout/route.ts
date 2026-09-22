@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe/client';
 import { getTrackBySlug } from '@/lib/db';
+import { getSiteUrl } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
       licenseName = 'Broadcast, TV & Theatrical Synchronization Buyout';
     }
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const siteUrl = getSiteUrl();
 
     if (!stripe) {
       // Mock checkout session for dev / testing mode when Stripe key isn't set yet

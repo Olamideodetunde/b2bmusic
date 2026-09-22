@@ -1,6 +1,6 @@
 import { neon } from '@neondatabase/serverless';
 import { initialTracks } from './mock-data';
-import { Track, IngestTrackPayload } from './types';
+import { Track, IngestTrackPayload, SyncMeta } from './types';
 import { makeUniqueSlug } from '../seo/slugify';
 
 import fs from 'fs';
@@ -81,21 +81,65 @@ export async function getAllTracks(): Promise<Track[]> {
     // Enrich with default fallback sync meta if queried from legacy DB schema
     return rows.map((r: any) => {
       const match = localTracksStore.find(t => t.slug === r.slug);
+
+      const defaultSyncMeta = {
+        composer: "B2B Production Team",
+        publisher: "B2B Syncworks (BMI)",
+        proAffiliation: "BMI (100% Direct Pre-Cleared)",
+        isrc: `US-B2B-26-${r.id.toString().padStart(5, '0')}`,
+        energyLevel: "Medium",
+        instrumentation: ["Analog Synths", "Acoustic Elements"],
+        soundPalette: ["Commercial", "Mastered 24-bit"],
+        tempoDescriptor: `${r.bpm} BPM Steady`
+      };
+
+      const baseSyncMeta = match?.syncMeta || defaultSyncMeta;
+      const rawMeta = r.syncMeta && typeof r.syncMeta === 'object' ? r.syncMeta : {};
+
+      const syncMeta: SyncMeta = {
+        composer: rawMeta.composer || baseSyncMeta.composer,
+        publisher: rawMeta.publisher || baseSyncMeta.publisher,
+        proAffiliation: rawMeta.proAffiliation || baseSyncMeta.proAffiliation,
+        isrc: rawMeta.isrc || baseSyncMeta.isrc,
+        energyLevel: rawMeta.energyLevel || baseSyncMeta.energyLevel,
+        instrumentation: Array.isArray(rawMeta.instrumentation) && rawMeta.instrumentation.length > 0
+          ? rawMeta.instrumentation
+          : (baseSyncMeta.instrumentation || ["Analog Synths", "Acoustic Elements"]),
+        soundPalette: Array.isArray(rawMeta.soundPalette) && rawMeta.soundPalette.length > 0
+          ? rawMeta.soundPalette
+          : (baseSyncMeta.soundPalette || ["Commercial", "Mastered 24-bit"]),
+        tempoDescriptor: rawMeta.tempoDescriptor || baseSyncMeta.tempoDescriptor || `${r.bpm} BPM Steady`
+      };
+
+      const altMixes = Array.isArray(r.altMixes) && r.altMixes.length > 0
+        ? r.altMixes
+        : (match?.altMixes || [
+            { name: "Full Master", duration: r.durationSeconds || 120, url: r.previewAudioUrl },
+            { name: "Underscore (No Lead)", duration: r.durationSeconds || 120, url: r.previewAudioUrl },
+            { name: "60-Sec Broadcast Cut", duration: 60, url: r.previewAudioUrl },
+            { name: "30-Sec Social Cut", duration: 30, url: r.previewAudioUrl }
+          ]);
+
+      const stems = Array.isArray(r.stems) && r.stems.length > 0
+        ? r.stems
+        : (match?.stems || ["01_Drums.wav", "02_Bass.wav", "03_Synths_Keys.wav", "04_FX_Atmosphere.wav", "05_Master_Mix.wav"]);
+
+      const moods = Array.isArray(r.moods) && r.moods.length > 0
+        ? r.moods
+        : (match?.moods || ["Commercial", "Pre-Cleared"]);
+
+      const useCases = Array.isArray(r.useCases) && r.useCases.length > 0
+        ? r.useCases
+        : (match?.useCases || ["Commercial Video", "Social Campaign"]);
+
       return {
         ...r,
         agencyPriceCents: r.agencyPriceCents || 2000,
-        altMixes: r.altMixes || match?.altMixes || [],
-        stems: r.stems || match?.stems || [],
-        syncMeta: r.syncMeta || match?.syncMeta || {
-          composer: "B2B Production Team",
-          publisher: "B2B Syncworks (BMI)",
-          proAffiliation: "BMI (100% Direct Pre-Cleared)",
-          isrc: `US-B2B-26-${r.id.toString().padStart(5, '0')}`,
-          energyLevel: "Medium",
-          instrumentation: ["Analog Synths", "Acoustic Elements"],
-          soundPalette: ["Commercial", "Mastered 24-bit"],
-          tempoDescriptor: `${r.bpm} BPM Steady`
-        }
+        moods,
+        useCases,
+        altMixes,
+        stems,
+        syncMeta
       } as Track;
     });
   } catch (error) {

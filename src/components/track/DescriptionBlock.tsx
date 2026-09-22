@@ -78,7 +78,7 @@ Rights: 100% Master & Sync Pre-Cleared`;
               Instrumentation &amp; Key Hardware
             </h3>
             <div className="flex flex-wrap gap-2">
-              {syncMeta.instrumentation.map((inst, i) => (
+              {(syncMeta.instrumentation || ["Analog Synths", "Acoustic Elements"]).map((inst, i) => (
                 <span
                   key={i}
                   className="px-3 py-1.5 rounded-xl bg-obsidian-900 text-xs text-zinc-200 border border-white/10 font-mono font-medium"
@@ -96,12 +96,12 @@ Rights: 100% Master & Sync Pre-Cleared`;
             </h3>
             <div className="flex flex-wrap gap-2">
               <span className="px-3 py-1.5 rounded-xl bg-crimson-600/15 text-xs text-crimson-300 border border-crimson-500/30 font-bold">
-                Energy: {syncMeta.energyLevel}
+                Energy: {syncMeta.energyLevel || 'Medium'}
               </span>
               <span className="px-3 py-1.5 rounded-xl bg-obsidian-900 text-xs text-zinc-200 border border-white/10 font-mono font-medium">
-                {syncMeta.tempoDescriptor}
+                {syncMeta.tempoDescriptor || `${bpm} BPM Steady`}
               </span>
-              {syncMeta.soundPalette.map((pal, i) => (
+              {(syncMeta.soundPalette || ["Commercial", "Mastered 24-bit"]).map((pal, i) => (
                 <span
                   key={i}
                   className="px-3 py-1.5 rounded-xl bg-obsidian-900/60 text-xs text-zinc-400 border border-white/5"

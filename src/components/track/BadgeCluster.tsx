@@ -36,7 +36,7 @@ export function BadgeCluster({ bpm, musicalKey, genre, moods = [] }: BadgeCluste
       </div>
 
       {/* Mood Tags */}
-      {moods.map((mood, idx) => (
+      {(moods || []).map((mood, idx) => (
         <span
           key={idx}
           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs text-zinc-400 bg-obsidian-900/60 border border-white/5"
