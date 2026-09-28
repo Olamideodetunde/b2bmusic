@@ -2,39 +2,62 @@
 
 import React from 'react';
 import { useAudio } from './GlobalAudioContext';
-import { Play, Pause, X } from 'lucide-react';
+import { Play, Pause, X, Volume2, VolumeX, RotateCcw, Repeat } from 'lucide-react';
 import Link from 'next/link';
 import { formatDuration } from '@/lib/utils';
 
 export function MiniPlayerBar() {
-  const { currentTrack, isPlaying, currentTime, duration, togglePlay, stopTrack } = useAudio();
+  const {
+    currentTrack,
+    isPlaying,
+    currentTime,
+    duration,
+    togglePlay,
+    stopTrack,
+    seek,
+    volume,
+    setVolume,
+    isLooping,
+    toggleLoop
+  } = useAudio();
 
   if (!currentTrack) return null;
 
   const effectiveDuration = duration > 0 ? duration : currentTrack.durationSeconds;
   const progressPercent = Math.min(100, (currentTime / effectiveDuration) * 100);
 
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+    seek(ratio * effectiveDuration);
+  };
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-obsidian-950/85 backdrop-blur-2xl border-t border-white/[0.08] shadow-[0_-12px_40px_rgba(0,0,0,0.8)] transition-all">
-      {/* Neon Crimson progress bar at very top */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-obsidian-800">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-obsidian-950/90 backdrop-blur-2xl border-t border-white/[0.1] shadow-[0_-12px_40px_rgba(0,0,0,0.85)] transition-all">
+      {/* Interactive Scrubbable Neon Crimson progress bar at very top */}
+      <div
+        onClick={handleProgressClick}
+        className="absolute -top-1 left-0 right-0 h-2 bg-obsidian-800/80 cursor-pointer group/bar select-none"
+        title="Click to scrub"
+      >
         <div
-          className="h-full bg-gradient-to-r from-crimson-500 via-crimson-400 to-rose-400 shadow-[0_0_10px_#EF4444] transition-all duration-200"
+          className="h-[3px] group-hover/bar:h-[5px] bg-gradient-to-r from-crimson-500 via-crimson-400 to-rose-400 shadow-[0_0_12px_#EF4444] transition-all duration-100"
           style={{ width: `${progressPercent}%` }}
         />
       </div>
 
-      <div className="w-full px-4 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 py-3 flex items-center justify-between gap-4">
+      <div className="w-full px-4 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 py-2.5 flex items-center justify-between gap-4">
         {/* Track info */}
         <div className="flex items-center gap-3.5 min-w-0 max-w-[240px] sm:max-w-xs md:max-w-sm">
           {currentTrack.coverImageUrl ? (
             <img
               src={currentTrack.coverImageUrl}
               alt={currentTrack.title}
-              className="w-11 h-11 rounded-xl object-cover border border-white/10 shrink-0 shadow-md"
+              className="w-10 h-10 rounded-xl object-cover border border-white/10 shrink-0 shadow-md"
             />
           ) : (
-            <div className="w-11 h-11 rounded-xl bg-obsidian-900 border border-crimson-500/40 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-obsidian-900 border border-crimson-500/40 flex items-center justify-center shrink-0">
               <span className="text-[10px] font-mono font-bold text-crimson-400">HQ</span>
             </div>
           )}
@@ -51,8 +74,16 @@ export function MiniPlayerBar() {
           </div>
         </div>
 
-        {/* Play Controls */}
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Play Controls & Transport */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => seek(0)}
+            className="hidden sm:flex p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors"
+            title="Restart Track"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+
           <button
             onClick={togglePlay}
             className="w-10 h-10 rounded-full btn-crimson text-white flex items-center justify-center shadow-lg shadow-crimson-600/40 hover:scale-105 transition-transform"
@@ -60,10 +91,20 @@ export function MiniPlayerBar() {
           >
             {isPlaying ? <Pause className="w-4 h-4 fill-current animate-pulse" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
           </button>
+
+          <button
+            onClick={toggleLoop}
+            className={`hidden sm:flex p-2 rounded-xl transition-colors ${
+              isLooping ? 'text-crimson-400 bg-crimson-600/20' : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
+            }`}
+            title={isLooping ? 'Loop Active' : 'Loop Off'}
+          >
+            <Repeat className="w-3.5 h-3.5" />
+          </button>
         </div>
 
         {/* Time display */}
-        <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-zinc-400">
+        <div className="hidden sm:flex items-center gap-1.5 text-xs font-mono text-zinc-400">
           <span className="text-white font-bold">{formatDuration(Math.floor(currentTime))}</span>
           <span className="text-zinc-600">/</span>
           <span>{formatDuration(effectiveDuration)}</span>
@@ -71,7 +112,7 @@ export function MiniPlayerBar() {
 
         {/* Waveform mini visualiser */}
         <div className="hidden md:flex items-center gap-[2.5px] h-7 w-28 lg:w-44 xl:w-64">
-          {Array.from({ length: 28 }).map((_, i) => {
+          {Array.from({ length: 32 }).map((_, i) => {
             const h = 25 + ((i * 11 + (currentTrack.id * 7)) % 65);
             return (
               <div
@@ -83,14 +124,34 @@ export function MiniPlayerBar() {
           })}
         </div>
 
-        {/* License CTA + Dismiss */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Volume & License CTA + Dismiss */}
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="hidden lg:flex items-center gap-2 bg-white/[0.03] px-2.5 py-1 rounded-xl border border-white/5">
+            <button
+              onClick={() => setVolume(volume === 0 ? 0.85 : 0)}
+              className="text-zinc-400 hover:text-white"
+            >
+              {volume === 0 ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+            </button>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={volume}
+              onChange={(e) => setVolume(parseFloat(e.target.value))}
+              className="w-16 h-1 bg-obsidian-700 rounded-lg appearance-none cursor-pointer accent-crimson-500"
+              aria-label="Volume"
+            />
+          </div>
+
           <Link
             href={`/tracks/${currentTrack.slug}`}
-            className="hidden sm:inline-flex text-xs font-bold bg-crimson-600/20 text-crimson-300 hover:bg-crimson-600 hover:text-white border border-crimson-500/30 px-3.5 py-1.5 rounded-xl transition-all shadow-md shadow-crimson-950/40"
+            className="text-xs font-bold btn-crimson text-white px-3.5 py-1.5 rounded-xl transition-all shadow-md shadow-crimson-950/40"
           >
-            License Track
+            License
           </Link>
+
           <button
             onClick={stopTrack}
             className="w-7 h-7 flex items-center justify-center rounded-lg bg-obsidian-900 hover:bg-obsidian-800 text-zinc-400 hover:text-white border border-white/10 transition-colors"

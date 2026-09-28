@@ -213,7 +213,7 @@ export async function upsertTrackFromIngest(payload: IngestTrackPayload): Promis
   // 3. Keyword slug match
   // 4. Exact title match
   const existingTrack = allExisting.find(t => 
-    (payload.id && t.id === payload.id) ||
+    (payload.id && (t.id === payload.id || t.id.toString() === payload.id.toString())) ||
     (candidateSlug && t.slug === candidateSlug) ||
     (keywordSlug && t.slug === keywordSlug) ||
     (t.title.toLowerCase().trim() === normalizedTitle)

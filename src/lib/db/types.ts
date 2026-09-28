@@ -53,7 +53,7 @@ export interface Track {
 }
 
 export interface IngestTrackPayload {
-  id?: number;
+  id?: number | string;
   slug?: string;
   title: string;
   targetKeyword: string;

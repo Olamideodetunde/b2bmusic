@@ -12,9 +12,12 @@ interface TrackCardProps {
 }
 
 export function TrackCard({ track }: TrackCardProps) {
-  const { currentTrack, isPlaying, playTrack, togglePlay } = useAudio();
+  const { currentTrack, isPlaying, playTrack, togglePlay, seek, currentTime, duration } = useAudio();
   const isCurrent = currentTrack?.id === track.id;
   const isCurrentlyPlaying = isCurrent && isPlaying;
+
+  const effectiveDuration = isCurrent && duration > 0 ? duration : track.durationSeconds;
+  const progressPercent = isCurrent && effectiveDuration > 0 ? (currentTime / effectiveDuration) * 100 : 0;
 
   const handlePlay = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -25,26 +28,40 @@ export function TrackCard({ track }: TrackCardProps) {
     }
   };
 
+  const handleWaveformClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+    if (!isCurrent) {
+      playTrack(track);
+    }
+    seek(ratio * effectiveDuration);
+  };
+
   return (
     <div
-      className={`group w-full py-4 px-2 sm:px-4 border-b border-white/[0.08] hover:bg-white/[0.025] transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-4 relative ${
-        isCurrent ? 'bg-white/[0.035]' : ''
+      className={`group w-full py-3.5 px-3 sm:px-5 rounded-2xl border transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4 relative ${
+        isCurrent
+          ? 'bg-crimson-950/20 border-crimson-500/40 shadow-xl shadow-crimson-950/30 ring-1 ring-crimson-500/20'
+          : 'bg-white/[0.015] hover:bg-white/[0.04] border-white/[0.06] hover:border-white/15'
       }`}
     >
       {/* Active track subtle left crimson accent glow line */}
       {isCurrent && (
-        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-crimson-400 via-crimson-600 to-crimson-800 shadow-[0_0_12px_#EF4444]" />
+        <div className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-gradient-to-b from-crimson-400 via-crimson-500 to-crimson-700 shadow-[0_0_12px_#EF4444]" />
       )}
 
       {/* ─── Left: Circular Play Trigger + Thumbnail + Title/Artist ─── */}
-      <div className="flex items-center gap-4 min-w-0 md:w-80 lg:w-96 shrink-0">
+      <div className="flex items-center gap-3.5 min-w-0 md:w-80 lg:w-96 shrink-0">
         {/* PremiumBeat-Style Circular Play Button */}
         <button
           onClick={handlePlay}
-          className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shrink-0 border transition-all ${
+          className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shrink-0 border transition-all duration-300 ${
             isCurrentlyPlaying
-              ? 'bg-crimson-600 border-crimson-400 text-white shadow-lg shadow-crimson-600/50 scale-105'
-              : 'border-white/20 bg-white/[0.04] text-white hover:border-crimson-500 hover:bg-crimson-600/20 group-hover:border-white/40'
+              ? 'bg-crimson-600 border-crimson-400 text-white shadow-xl shadow-crimson-600/50 scale-105'
+              : 'border-white/15 bg-white/[0.05] text-white hover:border-crimson-500 hover:bg-crimson-600/20 group-hover:border-white/30'
           }`}
           aria-label={isCurrentlyPlaying ? 'Pause track' : 'Play track'}
         >
@@ -57,12 +74,13 @@ export function TrackCard({ track }: TrackCardProps) {
 
         {/* Cover thumbnail */}
         {track.coverImageUrl && (
-          <div className="relative w-11 h-11 rounded-lg overflow-hidden shrink-0 border border-white/10 hidden sm:block">
+          <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-white/10 hidden sm:block shadow-md">
             <img
               src={track.coverImageUrl}
               alt={track.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
           </div>
         )}
 
@@ -70,16 +88,16 @@ export function TrackCard({ track }: TrackCardProps) {
         <div className="min-w-0 flex-1">
           <Link
             href={`/tracks/${track.slug}`}
-            className="font-syne text-base sm:text-lg font-bold text-white hover:text-crimson-400 transition-colors truncate block tracking-tight"
+            className="font-syne text-base font-bold text-white hover:text-crimson-400 transition-colors truncate block tracking-tight"
           >
             {track.title}
           </Link>
           <div className="flex items-center gap-2 text-xs text-zinc-400 font-jakarta mt-0.5 truncate">
-            <span>by {track.syncMeta?.composer || 'B2B Music Sync'}</span>
+            <span className="truncate">by {track.syncMeta?.composer || 'B2B Music Sync'}</span>
             <span className="text-zinc-600">•</span>
             <Link
               href={`/genres/${track.genre.toLowerCase().replace(/\s+/g, '-')}`}
-              className="text-zinc-300 hover:text-crimson-400 transition-colors"
+              className="text-zinc-300 hover:text-crimson-400 transition-colors font-medium shrink-0"
             >
               {track.genre}
             </Link>
@@ -87,20 +105,29 @@ export function TrackCard({ track }: TrackCardProps) {
         </div>
       </div>
 
-      {/* ─── Middle: Expansive Boundless Waveform on Dark Background ─── */}
-      <div className={`hidden md:flex flex-1 max-w-xl xl:max-w-2xl 2xl:max-w-3xl mx-4 items-center gap-[2px] h-10 px-2 select-none overflow-hidden ${
-        isCurrentlyPlaying ? 'laser-scanner' : ''
-      }`}>
+      {/* ─── Middle: Interactive Expansive Waveform with Click-to-Scrub ─── */}
+      <div
+        onClick={handleWaveformClick}
+        title="Click to audition &amp; scrub"
+        className={`hidden md:flex flex-1 max-w-xl xl:max-w-2xl 2xl:max-w-3xl mx-4 items-center gap-[2.5px] h-10 px-2.5 rounded-xl cursor-pointer select-none overflow-hidden transition-colors hover:bg-white/[0.03] ${
+          isCurrentlyPlaying ? 'laser-scanner' : ''
+        }`}
+      >
         {Array.from({ length: 56 }).map((_, i) => {
-          const barHeight = 18 + (((i * 19 + track.id * 17) % 78));
+          const barProgress = (i / 56) * 100;
+          const isPlayed = isCurrent && progressPercent >= barProgress;
+          const barHeight = 20 + (((i * 19 + track.id * 17) % 75));
+
           return (
             <div
               key={i}
-              className={`flex-1 rounded-full transition-all duration-150 ${
-                isCurrentlyPlaying
-                  ? 'bg-gradient-to-t from-crimson-600 via-crimson-500 to-crimson-300 bar-playing shadow-[0_0_4px_rgba(220,38,38,0.8)]'
-                  : 'bg-zinc-700/60 hover:bg-zinc-500'
-              }`}
+              className={`flex-1 rounded-full transition-all duration-100 ${
+                isPlayed
+                  ? 'bg-gradient-to-t from-crimson-600 via-crimson-500 to-crimson-400 shadow-[0_0_5px_rgba(220,38,38,0.7)]'
+                  : isCurrentlyPlaying
+                    ? 'bg-zinc-700/60 hover:bg-zinc-500'
+                    : 'bg-zinc-700/40 hover:bg-zinc-500'
+              } ${isCurrentlyPlaying && isPlayed && i % 3 === 0 ? 'bar-playing' : ''}`}
               style={{
                 height: `${barHeight}%`,
                 animationDelay: isCurrentlyPlaying ? `${(i % 14) * 0.05}s` : '0s',
@@ -111,25 +138,23 @@ export function TrackCard({ track }: TrackCardProps) {
       </div>
 
       {/* ─── Right: DAW Tags, Price & PremiumBeat-Style Download Button ─── */}
-      <div className="flex items-center justify-between md:justify-end gap-5 shrink-0 pt-2 md:pt-0">
+      <div className="flex items-center justify-between md:justify-end gap-4 shrink-0 pt-2 md:pt-0">
         {/* Technical Badges */}
         <div className="hidden lg:flex items-center gap-2 text-xs font-mono text-zinc-400">
-          <span>{track.bpm} BPM</span>
-          <span className="text-zinc-700">•</span>
-          <span>{track.musicalKey}</span>
-          <span className="text-zinc-700">•</span>
-          <span>{formatDuration(track.durationSeconds)}</span>
+          <span className="px-2 py-0.5 rounded-md bg-white/[0.03] border border-white/5">{track.bpm} BPM</span>
+          <span className="px-2 py-0.5 rounded-md bg-white/[0.03] border border-white/5">{track.musicalKey}</span>
+          <span className="text-zinc-500 font-semibold">{formatDuration(track.durationSeconds)}</span>
         </div>
 
         {/* PremiumBeat-Style Pill Download / License CTA */}
         <Link
           href={`/tracks/${track.slug}`}
-          className="inline-flex flex-col items-center justify-center px-5 py-2 rounded-full border border-white/20 bg-white/[0.05] hover:bg-crimson-600 hover:border-crimson-500 text-white transition-all shadow-md group/btn"
+          className="inline-flex flex-col items-center justify-center px-4 sm:px-5 py-2 rounded-full border border-white/20 bg-white/[0.04] hover:bg-crimson-600 hover:border-crimson-500 text-white transition-all shadow-md group/btn shrink-0"
         >
           <div className="flex items-center gap-1.5 font-syne text-xs font-black tracking-wider uppercase">
             <span>LICENSE {formatPrice(track.standardPriceCents)}</span>
           </div>
-          <div className="flex items-center gap-0.5 text-[9px] font-mono text-zinc-400 group-hover/btn:text-white/80">
+          <div className="flex items-center gap-0.5 text-[9px] font-mono text-zinc-400 group-hover/btn:text-white/90">
             <span>Includes Stems</span>
             <ChevronDown className="w-2.5 h-2.5" />
           </div>

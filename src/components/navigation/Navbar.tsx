@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Search, Menu, X, Disc3 } from 'lucide-react';
+import { Search, Menu, X, Disc3, ShieldCheck, Sparkles } from 'lucide-react';
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -36,29 +36,34 @@ export function Navbar() {
               B2B<span className="text-crimson-500">Production</span>Music
             </span>
             <span className="font-mono text-[9px] text-zinc-400 uppercase tracking-[0.2em] font-semibold mt-0.5">
-              Commercial Sync Catalog
+              Direct Sync Catalog
             </span>
           </div>
         </Link>
 
-        {/* ── Desktop Nav ── */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-zinc-400">
-          <Link href="/" className="hover:text-white transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">All Tracks</Link>
+        {/* ── Desktop Nav (Soundstripe & PremiumBeat Clean Style) ── */}
+        <nav className="hidden md:flex items-center gap-7 text-xs font-semibold uppercase tracking-wider font-mono text-zinc-400">
+          <Link href="/" className="hover:text-white transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">Catalog</Link>
           <Link href="/genres/cinematic-hybrid" className="hover:text-crimson-400 transition-colors">Cinematic</Link>
           <Link href="/genres/tech-ambient" className="hover:text-crimson-400 transition-colors">Corporate</Link>
           <Link href="/genres/commercial-pop" className="hover:text-crimson-400 transition-colors">Commercial</Link>
           <Link href="/use-cases/tech-podcast" className="hover:text-crimson-400 transition-colors">Podcasts</Link>
-          <Link href="/pricing" className="hover:text-crimson-400 transition-colors">Pricing</Link>
+          <Link href="/pricing" className="text-crimson-400 hover:text-white transition-colors font-bold">Pricing ($10+)</Link>
         </nav>
 
         {/* ── Right Actions ── */}
         <div className="flex items-center gap-3">
+          <div className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-500/25">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+            <span>100% Pre-Cleared</span>
+          </div>
+
           <Link
             href="/#catalog"
-            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl btn-crimson text-white shadow-xl shadow-crimson-600/30 border border-white/20"
+            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full btn-crimson text-white shadow-xl shadow-crimson-600/30 border border-white/20 hover:scale-105 transition-all"
           >
             <Search className="w-3.5 h-3.5" />
-            <span>Browse Catalog</span>
+            <span>Search Catalog</span>
           </Link>
 
           {/* Mobile hamburger */}
@@ -122,7 +127,7 @@ export function Navbar() {
           <Link
             href="/#catalog"
             onClick={() => setMobileOpen(false)}
-            className="block text-center btn-crimson text-white text-xs font-bold py-2.5 rounded-xl shadow-xl shadow-crimson-600/30"
+            className="block text-center btn-crimson text-white text-xs font-bold py-2.5 rounded-full shadow-xl shadow-crimson-600/30"
           >
             Explore Master Tracks
           </Link>
