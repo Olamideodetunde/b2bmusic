@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { CheckCircle2, Lock, ArrowRight, Loader2, ShieldCheck, Zap, Globe, Tv, Check, AlertTriangle, FlaskConical } from 'lucide-react';
 import { Track } from '@/lib/db/types';
 import { formatPrice } from '@/lib/utils';
@@ -32,18 +31,21 @@ function CheckoutCTAContent({ track, className = '' }: CheckoutCTAProps) {
   const [error, setError] = useState<string | null>(null);
   const [demo, setDemo] = useState(false);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
-  const searchParams = useSearchParams();
 
   // Returning from Stripe: confirm with the server rather than trusting the URL.
-  const sessionId = searchParams.get('checkout') === 'success' ? searchParams.get('session_id') : null;
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') !== 'success') return;
+    const sessionId = params.get('session_id');
     if (!sessionId) return;
+
     setConfirmation({ state: 'checking' });
     fetch(`/api/checkout/session?session_id=${encodeURIComponent(sessionId)}`)
       .then(r => r.json())
       .then(d => setConfirmation(d.paid ? { state: 'paid', tierName: d.tierName, email: d.email } : { state: 'unverified' }))
       .catch(() => setConfirmation({ state: 'unverified' }));
-  }, [sessionId]);
+  }, []);
 
   const handleCheckout = async () => {
     setLoading(true);

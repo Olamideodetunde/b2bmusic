@@ -42,12 +42,12 @@ export function tierInfo(key: LicenseTierKey) {
 }
 
 export function tierPriceCents(
-  track: { standardPriceCents: number; commercialPriceCents: number; broadcastPriceCents: number },
+  track: { standardPriceCents?: number; commercialPriceCents?: number; broadcastPriceCents?: number },
   key: LicenseTierKey,
 ): number {
   switch (key) {
-    case 'standard': return track.standardPriceCents;
-    case 'commercial': return track.commercialPriceCents;
-    case 'broadcast': return track.broadcastPriceCents;
+    case 'standard': return track.standardPriceCents ?? 1000;
+    case 'commercial': return track.commercialPriceCents ?? 2000;
+    case 'broadcast': return track.broadcastPriceCents ?? 4000;
   }
 }

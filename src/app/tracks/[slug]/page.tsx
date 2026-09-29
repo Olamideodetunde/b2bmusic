@@ -32,8 +32,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!track) return { title: 'Track Not Found' };
 
-  const title = `${track.title} | ${track.targetKeyword} (Commercial Sync License)`;
-  const description = `${track.description.slice(0, 155)}... 100% pre-cleared sync license with master WAV and stems.`;
+  const title = `${track.title} | ${track.targetKeyword || track.title} (Commercial Sync License)`;
+  const description = `${(track.description || '').slice(0, 155)}... 100% pre-cleared sync license with master WAV and stems.`;
 
   const coverUrl = track.coverImageUrl
     ? (track.coverImageUrl.startsWith('http') ? track.coverImageUrl : `${siteUrl}${track.coverImageUrl.startsWith('/') ? '' : '/'}${track.coverImageUrl}`)
@@ -103,8 +103,8 @@ export default async function TrackLandingPage({ params }: PageProps) {
     { value: String(track.bpm), label: `BPM · ${band.short}`, href: `/bpm/${band.slug}` },
     { value: key.camelot ? `${key.camelot} · ${key.short}` : key.short, label: track.musicalKey },
     { value: formatDuration(track.durationSeconds), label: 'Duration' },
-    ...(track.altMixes.length > 0 ? [{ value: String(track.altMixes.length), label: 'Alt-mixes' }] : []),
-    ...(track.stems.length > 0 ? [{ value: String(track.stems.length), label: 'Stems' }] : []),
+    ...(track.altMixes && track.altMixes.length > 0 ? [{ value: String(track.altMixes.length), label: 'Alt-mixes' }] : []),
+    ...(track.stems && track.stems.length > 0 ? [{ value: String(track.stems.length), label: 'Stems' }] : []),
   ];
 
   const card = 'rounded-2xl border border-white/[0.08] bg-obsidian-900/30';

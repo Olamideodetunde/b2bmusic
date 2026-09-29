@@ -118,7 +118,7 @@ export function AudioPlayer({ track }: AudioPlayerProps) {
             {saved ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
             {saved ? 'In Project' : 'Add to Project'}
           </button>
-          {track.stems.length > 0 && (
+          {track.stems && track.stems.length > 0 && (
             <button onClick={() => openStems(track)} className={toolBtn}>
               <Layers className="w-3.5 h-3.5 text-crimson-400" />
               Stems <span className="font-mono tabular-nums text-zinc-500">{track.stems.length}</span>
@@ -206,7 +206,7 @@ export function AudioPlayer({ track }: AudioPlayerProps) {
       </div>
 
       {/* ─── Alt-mix & cutdown versions (only when the track has them) ─── */}
-      {track.altMixes.length > 0 && (
+      {track.altMixes && track.altMixes.length > 0 && (
       <div className="border-t border-white/[0.06]">
         <div className="grid grid-cols-[28px_minmax(0,1fr)_88px_52px] gap-3 items-center h-8 px-4 sm:px-6 label-xs">
           <span />
