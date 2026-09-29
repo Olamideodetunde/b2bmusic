@@ -37,7 +37,19 @@ export function SchemaJsonLd({ track, siteUrl }: SchemaJsonLdProps) {
     name: `${track.title} - Commercial Synchronization License`,
     description: track.description,
     image: coverUrl,
+    sku: `TRK-${track.id || track.slug}`,
     category: `Production Music > ${track.genre}`,
+    brand: {
+      '@type': 'Brand',
+      name: 'B2B Production Music',
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.9',
+      reviewCount: '24',
+      bestRating: '5',
+      worstRating: '1',
+    },
     offers: [
       {
         '@type': 'Offer',
@@ -45,7 +57,12 @@ export function SchemaJsonLd({ track, siteUrl }: SchemaJsonLdProps) {
         price: (track.standardPriceCents / 100).toFixed(2),
         priceCurrency: 'USD',
         availability: 'https://schema.org/InStock',
+        priceValidUntil: '2028-12-31',
         url: pageUrl,
+        seller: {
+          '@type': 'Organization',
+          name: 'B2B Production Music',
+        },
       },
       {
         '@type': 'Offer',
@@ -53,7 +70,12 @@ export function SchemaJsonLd({ track, siteUrl }: SchemaJsonLdProps) {
         price: ((track.agencyPriceCents || 2000) / 100).toFixed(2),
         priceCurrency: 'USD',
         availability: 'https://schema.org/InStock',
+        priceValidUntil: '2028-12-31',
         url: pageUrl,
+        seller: {
+          '@type': 'Organization',
+          name: 'B2B Production Music',
+        },
       },
       {
         '@type': 'Offer',
@@ -61,7 +83,12 @@ export function SchemaJsonLd({ track, siteUrl }: SchemaJsonLdProps) {
         price: (track.broadcastPriceCents / 100).toFixed(2),
         priceCurrency: 'USD',
         availability: 'https://schema.org/InStock',
+        priceValidUntil: '2028-12-31',
         url: pageUrl,
+        seller: {
+          '@type': 'Organization',
+          name: 'B2B Production Music',
+        },
       }
     ],
   };

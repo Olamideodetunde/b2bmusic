@@ -1,11 +1,40 @@
 import React from 'react';
+import { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, CheckCircle2, Zap, Globe, Tv, ShieldCheck } from 'lucide-react';
+import { getSiteUrl } from '@/lib/utils';
 
-export const metadata = {
-  title: 'Licensing Tiers — B2B Production Music',
-  description: 'Simple, transparent sync licensing from $10. Web & Social, Broadcast & Sync, Full Buyout. Perpetual worldwide rights. Instant download.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const siteUrl = getSiteUrl();
+  return {
+    title: 'Commercial Sync Licensing Pricing & Tiers | B2B Production Music',
+    description: 'Simple, transparent sync licensing from $10. Web & Social, Commercial Ads, Full Buyout. Perpetual worldwide rights. Master WAV & isolated stems included.',
+    alternates: {
+      canonical: `${siteUrl}/pricing`,
+    },
+    openGraph: {
+      title: 'Commercial Sync Licensing Tiers | B2B Production Music',
+      description: 'Simple flat-fee sync licensing. $10 Web, $20 Commercial Ads, $40 Broadcast TV. Perpetual worldwide rights.',
+      url: `${siteUrl}/pricing`,
+      siteName: 'B2B Production Music',
+      type: 'website',
+      images: [
+        {
+          url: `${siteUrl}/banners/banner-crowd-amber.jpg`,
+          width: 1200,
+          height: 630,
+          alt: 'Commercial Sync Licensing Tiers',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Commercial Sync Licensing Tiers | B2B Production Music',
+      description: 'Simple flat-fee sync licensing from $10. Perpetual worldwide rights.',
+      images: [`${siteUrl}/banners/banner-crowd-amber.jpg`],
+    },
+  };
+}
 
 const tiers = [
   {
@@ -85,8 +114,26 @@ const faqs = [
 ];
 
 export default function PricingPage() {
+  const siteUrl = getSiteUrl();
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map(faq => ({
+      '@type': 'Question',
+      name: faq.q,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.a,
+      },
+    })),
+  };
+
   return (
     <div className="min-h-screen text-white relative">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       {/* Background ambient glows */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-crimson-600/10 rounded-full blur-[150px] pointer-events-none -z-10" />
 

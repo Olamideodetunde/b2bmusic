@@ -1,4 +1,5 @@
 import React from 'react';
+import { Metadata } from 'next';
 import { getAllTracks } from '@/lib/db';
 import { HeroSection } from '@/components/home/HeroSection';
 import { CatalogExplorer } from '@/components/hub/CatalogExplorer';
@@ -14,14 +15,83 @@ import {
   Globe,
   AudioLines
 } from 'lucide-react';
+import { getSiteUrl } from '@/lib/utils';
 
 export const revalidate = 3600;
 
+export async function generateMetadata(): Promise<Metadata> {
+  const siteUrl = getSiteUrl();
+  return {
+    title: 'B2B Production Music | Commercial Music Licensing for Video, Ads & Film',
+    description: 'Direct synchronization and commercial music licensing library. 100% pre-cleared master recordings with 24-bit WAV, isolated stems, broadcast cutdowns, and YouTube Content ID whitelist.',
+    alternates: {
+      canonical: siteUrl,
+    },
+    openGraph: {
+      title: 'B2B Production Music | Commercial Sync Licensing Library',
+      description: '100% pre-cleared commercial music licensing with stems, cutdowns, and YouTube Content ID protection. Perpetual licenses from $10.',
+      url: siteUrl,
+      siteName: 'B2B Production Music',
+      type: 'website',
+      images: [
+        {
+          url: `${siteUrl}/banners/banner-spark-energy.jpg`,
+          width: 1200,
+          height: 630,
+          alt: 'B2B Production Music Catalog',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'B2B Production Music | Commercial Music Licensing',
+      description: '100% pre-cleared commercial music licensing with stems, cutdowns, and YouTube Content ID protection.',
+      images: [`${siteUrl}/banners/banner-spark-energy.jpg`],
+    },
+  };
+}
+
 export default async function HomePage() {
   const tracks = await getAllTracks();
+  const siteUrl = getSiteUrl();
+
+  const organizationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'B2B Production Music',
+    url: siteUrl,
+    logo: `${siteUrl}/banners/banner-spark-energy.jpg`,
+    description: 'Commercial production music catalog and direct sync licensing provider for media, film, broadcast, and digital agencies.',
+    contactPoint: {
+      '@type': 'ContactPoint',
+      email: 'licensing@b2bproductionmusic.com',
+      contactType: 'customer support',
+    },
+  };
+
+  const websiteSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'B2B Production Music',
+    url: siteUrl,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: `${siteUrl}/#catalog?q={search_term_string}`,
+      'query-input': 'required name=search_term_string',
+    },
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-obsidian-950 text-white selection:bg-crimson-600/40 selection:text-white">
+      {/* Search Engine Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+      />
 
       {/* ─── HERO WITH FUTURISTIC IMAGE OVERLAY & ATMOSPHERE CONTROLS ─── */}
       <HeroSection />

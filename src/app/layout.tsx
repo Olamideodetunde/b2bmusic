@@ -37,14 +37,49 @@ export const metadata: Metadata = {
     default: "B2B Production Music | Commercial Music Licensing for Video & Media",
     template: "%s | B2B Production Music",
   },
-  description: "Direct synchronization and commercial music licensing for tech companies, video agencies, podcasts, and commercial broadcasts.",
-  keywords: ["production music", "commercial music licensing", "sync licensing", "corporate background music", "b2b audio library"],
+  description: "Direct synchronization and commercial music licensing for tech companies, video agencies, podcasts, and commercial broadcasts. 100% pre-cleared master WAVs & isolated stems.",
+  keywords: [
+    "production music",
+    "commercial music licensing",
+    "sync licensing",
+    "corporate background music",
+    "b2b audio library",
+    "royalty free music stems",
+    "broadcast music library",
+    "commercial soundtrack licensing",
+    "youtube content id safe music"
+  ],
   authors: [{ name: "Alvan Esiaka" }],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   openGraph: {
     title: "B2B Production Music | Commercial Music Licensing",
-    description: "High-quality, commercially cleared production music with direct sync licenses and YouTube Content ID protection.",
+    description: "High-quality, commercially cleared production music with direct sync licenses and YouTube Content ID protection. Perpetual licenses from $10.",
     siteName: "B2B Production Music",
     type: "website",
+    images: [
+      {
+        url: "/banners/banner-spark-energy.jpg",
+        width: 1200,
+        height: 630,
+        alt: "B2B Production Music Catalog",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "B2B Production Music | Commercial Music Licensing",
+    description: "High-quality, commercially cleared production music with direct sync licenses and YouTube Content ID protection.",
+    images: ["/banners/banner-spark-energy.jpg"],
   },
 };
 

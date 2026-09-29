@@ -36,10 +36,33 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? (track.coverImageUrl.startsWith('http') ? track.coverImageUrl : `${siteUrl}${track.coverImageUrl.startsWith('/') ? '' : '/'}${track.coverImageUrl}`)
     : `${siteUrl}/images/default-track-og.jpg`;
 
+  const keywords = [
+    track.targetKeyword,
+    track.title,
+    track.genre,
+    ...(track.moods || []),
+    ...(track.useCases || []),
+    'commercial sync license',
+    'royalty free production music',
+    'stems download'
+  ];
+
   return {
     title,
     description,
+    keywords,
     alternates: { canonical: `${siteUrl}/tracks/${track.slug}` },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
     openGraph: {
       title,
       description,

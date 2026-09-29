@@ -5,6 +5,8 @@ import { TrackCard } from '@/components/hub/TrackCard';
 import Link from 'next/link';
 import { Music2, ChevronRight, SlidersHorizontal } from 'lucide-react';
 
+import { getSiteUrl } from '@/lib/utils';
+
 interface GenrePageProps {
   params: { genre: string };
 }
@@ -18,21 +20,72 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: GenrePageProps): Promise<Metadata> {
+  const siteUrl = getSiteUrl();
   const genreTitle = params.genre.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const genreUrl = `${siteUrl}/genres/${params.genre}`;
+
   return {
     title: `${genreTitle} Production Music | Commercial Licensing Library`,
     description: `Explore and license royalty-free ${genreTitle} commercial background music. Direct sync licenses, instant download, and YouTube Content ID clearance.`,
+    alternates: {
+      canonical: genreUrl,
+    },
+    openGraph: {
+      title: `${genreTitle} Commercial Music | B2B Production Music`,
+      description: `Browse 100% pre-cleared ${genreTitle} tracks with isolated stems and broadcast cutdowns.`,
+      url: genreUrl,
+      siteName: 'B2B Production Music',
+      type: 'website',
+      images: [
+        {
+          url: `${siteUrl}/banners/banner-stage-lights.jpg`,
+          width: 1200,
+          height: 630,
+          alt: `${genreTitle} Music Catalog`,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${genreTitle} Commercial Music | B2B Production Music`,
+      description: `Browse 100% pre-cleared ${genreTitle} tracks with isolated stems and broadcast cutdowns.`,
+      images: [`${siteUrl}/banners/banner-stage-lights.jpg`],
+    },
   };
 }
 
 export default async function GenreHubPage({ params }: GenrePageProps) {
   const tracks = await getTracksByGenre(params.genre);
   const genreTitle = params.genre.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const siteUrl = getSiteUrl();
 
   if (tracks.length === 0) notFound();
 
+  const itemListSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: `${genreTitle} Production Music Catalog`,
+    description: `Curated collection of ${genreTitle} commercial production tracks.`,
+    url: `${siteUrl}/genres/${params.genre}`,
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: tracks.length,
+      itemListElement: tracks.map((track, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: track.title,
+        url: `${siteUrl}/tracks/${track.slug}`,
+      })),
+    },
+  };
+
   return (
     <div className="w-full max-w-[1700px] mx-auto py-10 px-4 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 min-h-screen text-white relative">
+      {/* Schema.org Collection List */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+      />
       {/* Background ambient glow */}
       <div className="absolute top-12 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-crimson-600/10 rounded-full blur-[140px] pointer-events-none -z-10" />
 

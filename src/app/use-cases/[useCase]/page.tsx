@@ -5,6 +5,8 @@ import { TrackCard } from '@/components/hub/TrackCard';
 import Link from 'next/link';
 import { Briefcase, ChevronRight, SlidersHorizontal } from 'lucide-react';
 
+import { getSiteUrl } from '@/lib/utils';
+
 interface UseCasePageProps {
   params: { useCase: string };
 }
@@ -21,21 +23,72 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: UseCasePageProps): Promise<Metadata> {
+  const siteUrl = getSiteUrl();
   const useCaseTitle = params.useCase.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const useCaseUrl = `${siteUrl}/use-cases/${params.useCase}`;
+
   return {
     title: `Best Music for ${useCaseTitle} | Commercial Sync Catalog`,
     description: `Curated royalty-free commercial production music for ${useCaseTitle}. High impact, voiceover-friendly audio cleared for commercial broadcast and YouTube.`,
+    alternates: {
+      canonical: useCaseUrl,
+    },
+    openGraph: {
+      title: `Commercial Music for ${useCaseTitle} | B2B Production Music`,
+      description: `Curated production tracks engineered for ${useCaseTitle}. Pre-cleared worldwide sync licenses with stems.`,
+      url: useCaseUrl,
+      siteName: 'B2B Production Music',
+      type: 'website',
+      images: [
+        {
+          url: `${siteUrl}/banners/banner-dj-producer.jpg`,
+          width: 1200,
+          height: 630,
+          alt: `Music for ${useCaseTitle}`,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `Commercial Music for ${useCaseTitle} | B2B Production Music`,
+      description: `Curated production tracks engineered for ${useCaseTitle}. Pre-cleared worldwide sync licenses with stems.`,
+      images: [`${siteUrl}/banners/banner-dj-producer.jpg`],
+    },
   };
 }
 
 export default async function UseCaseHubPage({ params }: UseCasePageProps) {
   const tracks = await getTracksByUseCase(params.useCase);
   const useCaseTitle = params.useCase.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const siteUrl = getSiteUrl();
 
   if (tracks.length === 0) notFound();
 
+  const itemListSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: `Production Music for ${useCaseTitle}`,
+    description: `Curated commercial sync music engineered for ${useCaseTitle}.`,
+    url: `${siteUrl}/use-cases/${params.useCase}`,
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: tracks.length,
+      itemListElement: tracks.map((track, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: track.title,
+        url: `${siteUrl}/tracks/${track.slug}`,
+      })),
+    },
+  };
+
   return (
     <div className="w-full max-w-[1700px] mx-auto py-10 px-4 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 min-h-screen text-white relative">
+      {/* Schema.org Collection List */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+      />
       {/* Background ambient glow */}
       <div className="absolute top-12 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-crimson-600/10 rounded-full blur-[140px] pointer-events-none -z-10" />
 
