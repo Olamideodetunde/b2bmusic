@@ -16,7 +16,11 @@ export async function handlePublish(body: Record<string, unknown>): Promise<Next
     const result = await publishTrack(getRepository(), body);
 
     if (!result.ok) {
-      await sendPublishFailureEmail({ title: String(body.title ?? body.Title ?? ''), errorSummary: result.errorSummary });
+      // A Draft row isn't a failure — it's a row the client hasn't released yet. Don't alert on it.
+      const isDraft = result.httpStatus === 409 && result.errors.length === 1 && result.errors[0].field === 'status';
+      if (!isDraft) {
+        await sendPublishFailureEmail({ title: String(body.title ?? body.Title ?? ''), errorSummary: result.errorSummary });
+      }
       return NextResponse.json(
         { ok: false, status: result.status, errorSummary: result.errorSummary, errors: result.errors, warnings: result.warnings },
         { status: result.httpStatus },

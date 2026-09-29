@@ -20,10 +20,10 @@ export function UseCaseMarquee() {
           <ul key={copy} aria-hidden={copy === 1} className="flex items-center shrink-0">
             {USE_CASES.map(item => (
               <li key={item} className="flex items-center gap-10 pr-10">
-                <span className="font-syne text-2xl sm:text-3xl font-bold tracking-tight text-obsidian-500 transition-colors duration-500 hover:text-white whitespace-nowrap">
+                <span className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-navy-500 transition-colors duration-500 hover:text-white whitespace-nowrap">
                   {item}
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-crimson-600" />
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-600" />
               </li>
             ))}
           </ul>

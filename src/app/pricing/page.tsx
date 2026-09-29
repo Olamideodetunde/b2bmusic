@@ -8,19 +8,20 @@ import { LICENSE_TIERS, tierPriceCents, type LicenseTierKey } from '@/lib/licens
 import { PageHeader } from '@/components/navigation/PageHeader';
 import { Container, Eyebrow, Reveal } from '@/components/home/primitives';
 import { ClosingCta } from '@/components/home/ClosingCta';
+import { BRAND, mailto } from '@/lib/brand';
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = getSiteUrl();
   return {
-    title: 'Commercial Sync Licensing Pricing & Tiers | B2B Production Music',
+    title: `Commercial Sync Licensing Pricing & Tiers | ${BRAND.name}`,
     description: 'Simple, transparent sync licensing from $10. Web & Social, Commercial Ads, Full Buyout. Perpetual worldwide rights. Master WAV & isolated stems included.',
     alternates: {
       canonical: `${siteUrl}/pricing`,
     },
     openGraph: {
-      title: 'Commercial Sync Licensing Tiers | B2B Production Music',
+      title: `Commercial Sync Licensing Tiers | ${BRAND.name}`,
       description: 'Simple flat-fee sync licensing. $10 Web, $20 Commercial Ads, $40 Broadcast TV. Perpetual worldwide rights.',
       url: `${siteUrl}/pricing`,
-      siteName: 'B2B Production Music',
+      siteName: BRAND.name,
       type: 'website',
       images: [
         {
@@ -33,7 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'Commercial Sync Licensing Tiers | B2B Production Music',
+      title: `Commercial Sync Licensing Tiers | ${BRAND.name}`,
       description: 'Simple flat-fee sync licensing from $10. Perpetual worldwide rights.',
       images: [`${siteUrl}/banners/banner-crowd-amber.jpg`],
     },
@@ -45,7 +46,7 @@ const TIER_ICONS = {
   commercial: <Zap className="w-6 h-6" />,
   broadcast: <Tv className="w-6 h-6" />,
 } as const;
-const TIER_COLORS = { standard: 'text-zinc-400', commercial: 'text-crimson-400', broadcast: 'text-red-400' } as const;
+const TIER_COLORS = { standard: 'text-slate-400', commercial: 'text-brand-400', broadcast: 'text-gold-400' } as const;
 
 
 const faqs = [
@@ -67,7 +68,7 @@ const faqs = [
   },
   {
     q: 'Is there an enterprise or volume pricing option?',
-    a: 'Yes. Contact licensing@b2bproductionmusic.com for custom volume deals, catalog subscriptions, or exclusive buyouts.',
+    a: `Yes. Contact ${BRAND.contactEmail} for custom volume deals, catalog subscriptions, or exclusive buyouts.`,
   },
 ];
 
@@ -128,7 +129,7 @@ export default async function PricingPage() {
       <PageHeader
         crumbs={[{ href: '/', label: 'Home' }, { label: 'Licensing' }]}
         eyebrow="Licensing & rights"
-        title={<>One track. One fee. <span className="text-obsidian-300">Yours to keep.</span></>}
+        title={<>One track. One fee. <span className="text-navy-300">Yours to keep.</span></>}
         description="Per-track perpetual licenses — one project per license, no subscription, no renewal dates. Every tier is 100% one-stop cleared."
       />
 
@@ -145,21 +146,21 @@ export default async function PricingPage() {
                     <div
                       key={tier.key}
                       role="columnheader"
-                      className={`relative px-6 py-6 border-l border-white/[0.06] ${tier.popular ? 'bg-crimson-600/[0.06]' : ''}`}
+                      className={`relative px-6 py-6 border-l border-white/[0.06] ${tier.popular ? 'bg-brand-600/[0.06]' : ''}`}
                     >
-                      {tier.popular && <span className="absolute inset-x-0 top-0 h-px bg-crimson-500" />}
+                      {tier.popular && <span className="absolute inset-x-0 top-0 h-px bg-brand-500" />}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium text-zinc-200">{tier.label}</span>
+                        <span className="text-sm font-medium text-slate-200">{tier.label}</span>
                         {tier.popular && (
-                          <span className="text-[10px] font-mono uppercase tracking-wider text-crimson-400">Most chosen</span>
+                          <span className="text-[10px] font-mono uppercase tracking-wider text-brand-400">Most chosen</span>
                         )}
                       </div>
                       <div className="flex items-baseline gap-2 mt-5">
-                        <span className="text-xs font-mono text-zinc-500">From</span>
+                        <span className="text-xs font-mono text-slate-500">From</span>
                         <span className="text-4xl font-mono font-medium tabular-nums tracking-tight text-white">{tier.price}</span>
-                        <span className="text-xs font-mono text-zinc-500">/ track</span>
+                        <span className="text-xs font-mono text-slate-500">/ track</span>
                       </div>
-                      <p className="text-xs text-zinc-500 leading-relaxed mt-3">{tier.description}</p>
+                      <p className="text-xs text-slate-500 leading-relaxed mt-3">{tier.description}</p>
                     </div>
                   ))}
                 </div>
@@ -167,16 +168,16 @@ export default async function PricingPage() {
                 {/* Capability rows */}
                 {matrix.map((row) => (
                   <div key={row.label} className={`${cols} border-b border-white/[0.05] transition-colors hover:bg-white/[0.02]`} role="row">
-                    <div className="px-6 py-3.5 text-sm text-zinc-300">{row.label}</div>
+                    <div className="px-6 py-3.5 text-sm text-slate-300">{row.label}</div>
                     {row.included.map((on, i) => (
                       <div
                         key={i}
-                        className={`px-6 py-3.5 border-l border-white/[0.06] flex items-center ${tiers[i].popular ? 'bg-crimson-600/[0.06]' : ''}`}
+                        className={`px-6 py-3.5 border-l border-white/[0.06] flex items-center ${tiers[i].popular ? 'bg-brand-600/[0.06]' : ''}`}
                       >
                         {on ? (
-                          <Check className="w-4 h-4 text-crimson-400" aria-label="Included" />
+                          <Check className="w-4 h-4 text-brand-400" aria-label="Included" />
                         ) : (
-                          <Minus className="w-4 h-4 text-obsidian-500" aria-label="Not included" />
+                          <Minus className="w-4 h-4 text-navy-500" aria-label="Not included" />
                         )}
                       </div>
                     ))}
@@ -189,15 +190,15 @@ export default async function PricingPage() {
                   {tiers.map((tier) => (
                     <div
                       key={tier.key}
-                      className={`px-6 py-6 border-l border-white/[0.06] ${tier.popular ? 'bg-crimson-600/[0.06]' : ''}`}
+                      className={`px-6 py-6 border-l border-white/[0.06] ${tier.popular ? 'bg-brand-600/[0.06]' : ''}`}
                     >
-                      <p className="text-xs text-zinc-400 leading-snug">{tier.footer}</p>
+                      <p className="text-xs text-slate-400 leading-snug">{tier.footer}</p>
                       <Link
                         href="/#catalog"
                         className={`group mt-4 inline-flex items-center gap-1.5 h-9 px-4 rounded-full text-xs font-semibold transition-colors ${
                           tier.popular
-                            ? 'bg-crimson-600 hover:bg-crimson-500 text-white'
-                            : 'border border-white/15 text-zinc-200 hover:text-white hover:border-white/40'
+                            ? 'bg-brand-600 hover:bg-brand-500 text-white'
+                            : 'border border-white/15 text-slate-200 hover:text-white hover:border-white/40'
                         }`}
                       >
                         Browse catalog
@@ -219,16 +220,16 @@ export default async function PricingPage() {
             <Reveal>
               <Eyebrow>FAQ</Eyebrow>
               <h2 className="mt-5 text-4xl sm:text-5xl font-bold tracking-tight leading-[1.04]">
-                Licensing <span className="text-obsidian-300">questions.</span>
+                Licensing <span className="text-navy-300">questions.</span>
               </h2>
-              <p className="mt-5 text-base text-zinc-400 leading-relaxed max-w-sm">
+              <p className="mt-5 text-base text-slate-400 leading-relaxed max-w-sm">
                 Need volume, exclusive or catalog-wide terms? Our licensing team replies within one business day.
               </p>
               <a
-                href="mailto:licensing@b2bproductionmusic.com?subject=Enterprise%20Licensing%20Inquiry"
-                className="mt-6 inline-block font-mono text-sm text-crimson-400 hover:text-crimson-300 transition-colors"
+                href={mailto('Enterprise Licensing Inquiry')}
+                className="mt-6 inline-block font-mono text-sm text-brand-400 hover:text-brand-300 transition-colors"
               >
-                licensing@b2bproductionmusic.com
+                {BRAND.contactEmail}
               </a>
             </Reveal>
 
@@ -236,14 +237,14 @@ export default async function PricingPage() {
               <div className="border-t border-white/[0.08]">
                 {faqs.map((faq) => (
                   <details key={faq.q} className="group border-b border-white/[0.08]">
-                    <summary className="flex items-center justify-between gap-6 py-6 cursor-pointer list-none text-lg font-medium tracking-tight text-zinc-100 hover:text-white [&::-webkit-details-marker]:hidden">
+                    <summary className="flex items-center justify-between gap-6 py-6 cursor-pointer list-none text-lg font-medium tracking-tight text-slate-100 hover:text-white [&::-webkit-details-marker]:hidden">
                       {faq.q}
                       <span className="relative w-4 h-4 shrink-0">
-                        <span className="absolute top-1/2 left-0 w-4 h-px bg-zinc-400" />
-                        <span className="absolute top-1/2 left-0 w-4 h-px bg-zinc-400 rotate-90 transition-transform duration-300 group-open:rotate-0" />
+                        <span className="absolute top-1/2 left-0 w-4 h-px bg-slate-400" />
+                        <span className="absolute top-1/2 left-0 w-4 h-px bg-slate-400 rotate-90 transition-transform duration-300 group-open:rotate-0" />
                       </span>
                     </summary>
-                    <p className="pb-6 pr-10 text-sm text-zinc-400 leading-relaxed">{faq.a}</p>
+                    <p className="pb-6 pr-10 text-sm text-slate-400 leading-relaxed">{faq.a}</p>
                   </details>
                 ))}
               </div>

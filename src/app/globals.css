@@ -3,10 +3,13 @@
 @tailwind utilities;
 
 :root {
-  --background: #060608;
+  /* Brand tokens — sampled from the GlobalB2BAudioHolding logo */
+  --background: #050b17;   /* navy-950 */
   --foreground: #F8FAFC;
-  --crimson: #DC2626;
-  --crimson-glow: rgba(220, 38, 38, 0.45);
+  --brand: #0a64f0;        /* royal blue */
+  --brand-glow: rgba(10, 100, 240, 0.45);
+  --gold: #cfa044;
+  --navy-ink: #102038;     /* logo wordmark ink */
 }
 
 * {
@@ -32,13 +35,12 @@ body {
 
 /* ─── Typography Hierarchy ─── */
 
-/* Syne for all headings — geometric, futuristic, cinematic */
+/* Montserrat for all headings — the logo's typeface */
 h1, h2, h3, h4, h5, h6,
-.font-display,
-.font-syne {
-  font-family: var(--font-syne), system-ui, sans-serif;
-  font-feature-settings: "kern" 1, "ss01" 1;
-  letter-spacing: -0.025em;
+.font-display {
+  font-family: var(--font-brand), Montserrat, system-ui, sans-serif;
+  font-feature-settings: "kern" 1;
+  letter-spacing: -0.02em;
   color: #FFFFFF;
 }
 
@@ -60,32 +62,32 @@ code, kbd, pre, samp,
   font-variant-numeric: tabular-nums;
 }
 
-/* ─── Obsidian Futuristic Scrollbar ─── */
+/* ─── Navy Scrollbar ─── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #09090D;
+  background: #081223;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1F1F2B;
+  background: #1e365c;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #DC2626;
-  box-shadow: 0 0 10px rgba(220, 38, 38, 0.8);
+  background: #0a64f0;
+  box-shadow: 0 0 10px rgba(10, 100, 240, 0.8);
 }
 
-/* Crimson Selection */
+/* Brand Selection */
 ::selection {
-  background: rgba(220, 38, 38, 0.4);
+  background: rgba(10, 100, 240, 0.4);
   color: #FFFFFF;
 }
 
 /* ─── Futuristic Glassmorphism Utilities ─── */
 .glass-panel {
-  background: rgba(13, 13, 18, 0.72);
+  background: rgba(8, 18, 35, 0.72);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -93,7 +95,7 @@ code, kbd, pre, samp,
 }
 
 .glass-card {
-  background: linear-gradient(135deg, rgba(20, 20, 28, 0.75) 0%, rgba(10, 10, 15, 0.85) 100%);
+  background: linear-gradient(135deg, rgba(15, 30, 54, 0.75) 0%, rgba(8, 18, 35, 0.85) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -102,31 +104,31 @@ code, kbd, pre, samp,
 }
 
 .glass-card:hover {
-  background: linear-gradient(135deg, rgba(28, 28, 38, 0.85) 0%, rgba(14, 14, 20, 0.92) 100%);
-  border-color: rgba(220, 38, 38, 0.45);
-  box-shadow: 0 16px 48px -8px rgba(220, 38, 38, 0.22), 0 0 0 1px rgba(220, 38, 38, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  background: linear-gradient(135deg, rgba(21, 42, 74, 0.85) 0%, rgba(11, 23, 43, 0.92) 100%);
+  border-color: rgba(42, 123, 255, 0.45);
+  box-shadow: 0 16px 48px -8px rgba(10, 100, 240, 0.22), 0 0 0 1px rgba(42, 123, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   transform: translateY(-2px);
 }
 
-/* ─── Glowing Neon Button ─── */
-.btn-crimson {
+/* ─── Primary button (royal blue) ─── */
+.btn-primary {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #EF4444 0%, #DC2626 60%, #B91C1C 100%);
+  background: linear-gradient(135deg, #2a7bff 0%, #0a64f0 60%, #0752c4 100%);
   color: #FFFFFF;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 0 24px rgba(220, 38, 38, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 24px rgba(10, 100, 240, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   transition: all 0.25s ease;
 }
-.btn-crimson:hover {
-  background: linear-gradient(135deg, #F87171 0%, #EF4444 60%, #DC2626 100%);
-  box-shadow: 0 0 35px rgba(220, 38, 38, 0.75), 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+.btn-primary:hover {
+  background: linear-gradient(135deg, #5a9bff 0%, #2a7bff 60%, #0a64f0 100%);
+  box-shadow: 0 0 35px rgba(10, 100, 240, 0.65), 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
   transform: translateY(-1px) scale(1.01);
 }
-.btn-crimson:active {
+.btn-primary:active {
   transform: scale(0.98);
 }
-.btn-crimson::after {
+.btn-primary::after {
   content: '';
   position: absolute;
   top: -50%;
@@ -137,7 +139,7 @@ code, kbd, pre, samp,
   transform: skewX(-20deg);
   transition: left 0.6s ease;
 }
-.btn-crimson:hover::after {
+.btn-primary:hover::after {
   left: 140%;
 }
 
@@ -164,25 +166,48 @@ code, kbd, pre, samp,
   z-index: 0;
 }
 
-/* ─── Crimson Gradient & Glow Text ─── */
-.text-crimson-gradient {
-  background: linear-gradient(135deg, #F87171 0%, #EF4444 40%, #DC2626 100%);
+/* ─── Brand Gradient & Glow Text ─── */
+.text-brand-gradient {
+  background: linear-gradient(135deg, #8ebcff 0%, #2a7bff 45%, #0a64f0 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.text-glow-crimson {
-  text-shadow: 0 0 24px rgba(220, 38, 38, 0.6), 0 0 50px rgba(220, 38, 38, 0.3);
+.text-glow-brand {
+  text-shadow: 0 0 24px rgba(10, 100, 240, 0.55), 0 0 50px rgba(10, 100, 240, 0.25);
 }
+
+/* ─── Gold accent (logo play-button rim / ".com") — use sparingly ─── */
+.text-gold-gradient {
+  background: linear-gradient(135deg, #f5df9f 0%, #e2b654 45%, #b98a3a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.btn-gold {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f0cd6c 0%, #cfa044 55%, #b98a3a 100%);
+  color: #102038;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 22px rgba(207, 160, 68, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition: all 0.25s ease;
+}
+.btn-gold:hover {
+  background: linear-gradient(135deg, #f5df9f 0%, #e2b654 55%, #cfa044 100%);
+  box-shadow: 0 0 32px rgba(207, 160, 68, 0.55), 0 8px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  transform: translateY(-1px);
+}
+.btn-gold:active { transform: scale(0.98); }
 
 /* ─── Card hover glow ─── */
 .card-hover {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .card-hover:hover {
-  border-color: rgba(220, 38, 38, 0.55);
-  box-shadow: 0 20px 48px -8px rgba(220, 38, 38, 0.25), 0 0 0 1px rgba(220, 38, 38, 0.35);
+  border-color: rgba(42, 123, 255, 0.55);
+  box-shadow: 0 20px 48px -8px rgba(10, 100, 240, 0.25), 0 0 0 1px rgba(42, 123, 255, 0.35);
   transform: translateY(-3px);
 }
 
@@ -197,7 +222,7 @@ code, kbd, pre, samp,
   top: 0;
   bottom: 0;
   width: 40px;
-  background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.4), rgba(255, 255, 255, 0.8), rgba(239, 68, 68, 0.4), transparent);
+  background: linear-gradient(90deg, transparent, rgba(42, 123, 255, 0.4), rgba(255, 255, 255, 0.8), rgba(42, 123, 255, 0.4), transparent);
   animation: laser-scan 2.8s ease-in-out infinite;
   pointer-events: none;
   filter: blur(1px);
@@ -225,7 +250,7 @@ code, kbd, pre, samp,
 }
 
 
-/* ─── Dense workspace primitives (same obsidian / crimson tokens) ─── */
+/* ─── Dense workspace primitives (same navy / brand tokens) ─── */
 .label-xs {
   font-family: var(--font-jakarta), system-ui, sans-serif;
   font-size: 10px;
@@ -233,7 +258,7 @@ code, kbd, pre, samp,
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #71718a; /* obsidian-400 */
+  color: #6c80a5; /* navy-400 */
 }
 
 /* Dual-thumb range: two stacked native ranges; only the thumbs take input */
@@ -250,7 +275,7 @@ code, kbd, pre, samp,
   height: 12px;
   border-radius: 9999px;
   background: #FFFFFF;
-  border: 2px solid #DC2626;
+  border: 2px solid #0a64f0;
   cursor: grab;
 }
 .range-dual::-moz-range-thumb {
@@ -259,7 +284,7 @@ code, kbd, pre, samp,
   height: 10px;
   border-radius: 9999px;
   background: #FFFFFF;
-  border: 2px solid #DC2626;
+  border: 2px solid #0a64f0;
   cursor: grab;
 }
 .range-dual::-webkit-slider-runnable-track { background: transparent; }

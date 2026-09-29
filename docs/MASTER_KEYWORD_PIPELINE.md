@@ -1,166 +1,119 @@
-# B2BProductionMusic.com
-## Master Keyword File & Make.com Automation Pipeline
-### Technical Standard Operating Procedure (SOP) & Client Handover Guide
+# GlobalB2BAudioHolding.com — Master Keyword Index Guide
+
+How to fill in the Google Sheet master index so each row becomes a strong, unique landing page.
+
+- **Make.com set-up:** follow [`make-scenario.md`](make-scenario.md). It is the only supported scenario configuration.
+- **API contract:** see [`api.md`](api.md).
+- **Validation rules and day-to-day operations:** see the [README](../README.md).
 
 ---
 
-## 1. System Architecture Overview
-
-The programmatic publishing pipeline automates the generation of SEO-optimized, highly converting track landing pages from Google Sheets to the live production website.
+## 1. How a row becomes a page
 
 ```mermaid
 flowchart LR
-    A["Google Sheets\n(Master Index)"] -->|"Status = Ready"| B["Make.com\n(Scenario)"]
-    B -->|"POST /api/track-pages\n(Bearer Auth)"| C["Next.js Ingestion API\n(Validation & Idempotency)"]
-    C -->|"In-Place Upsert"| D[("Neon PostgreSQL\n(Single Source of Truth)")]
-    C -->|"On-Demand Revalidate"| E["Next.js ISR\n(/tracks/[slug])"]
-    C -->|"Write Back Status &\nLive URL"| B
-    B -->|"Update Row"| A
+    A["Google Sheet<br/>(Track Index)"] -->|"Status = Ready"| B["Make.com"]
+    B -->|"POST /api/tracks<br/>(Bearer key)"| C["API<br/>validate · slug · upsert"]
+    C --> D[("Neon Postgres")]
+    C -->|"revalidatePath"| E["/tracks/&lt;slug&gt; + its hubs"]
+    C -->|"status, liveUrl, trackId"| B
+    B -->|"Update row"| A
 ```
 
-### Key Technical Guarantees
-1. **Zero Duplicate URLs / Slugs**: Canonical slugs are generated from buyer search intent keywords. Re-publishing or editing a track in the spreadsheet updates the database record in-place without appending `-2` or breaking Google indexation.
-2. **On-Demand ISR**: Only the specific track page is re-rendered in seconds; the rest of the site remains lightning fast without full rebuilds.
-3. **Structured SEO**: Every page automatically renders Google Schema.org (`Product`, `AudioObject`, `BreadcrumbList`) metadata.
+- **One URL per track, and it never changes.** The slug is built from the **Target Keyword** the first time a track is published. Later edits update the same record and keep the same URL, so rankings and backlinks survive.
+- **Only the affected pages refresh.** That means the track page and its genre, BPM and use-case hubs. There is no full rebuild, and the pages are live within seconds.
+- **Every page gets structured data automatically:** `Product` with three license offers, `AudioObject` and `BreadcrumbList`.
 
 ---
 
-## 2. Master Keyword File Structure (Google Sheets)
+## 2. Sheet columns (A–Q)
 
-Create a Google Sheet titled **`B2B Music Master Index`** with the following 17 columns (Columns A through Q):
+The column headers must match `fixtures/sample-track-index.csv` exactly.
 
-| Col | Field Name | Data Type | Required? | Description & Example |
-| :---: | :--- | :--- | :---: | :--- |
-| **A** | `Title` | String | **Yes** | Commercial track title. *Example:* `Apex Solar Pulse` |
-| **B** | `Target Keyword` | String | **Yes** | High-intent long-tail search query. *Example:* `futuristic solar automotive commercial soundtrack` |
-| **C** | `Genre` | String | **Yes** | Primary genre. *Example:* `Electronic`, `Cinematic`, `Hip Hop`, `Indie Rock` |
-| **D** | `BPM` | Integer | **Yes** | Beats per minute. *Example:* `128` |
-| **E** | `Musical Key` | String | No | Harmonic key. *Example:* `A Minor`, `D Major` |
-| **F** | `Duration` | String | No | Formatted `M:SS`. *Example:* `2:45` |
-| **G** | `Description` | Text | **Yes** | 2–3 sentences describing the mood, instrumentation, and intended video workflow. |
-| **H** | `Moods` | Text (CSV) | **Yes** | Comma-separated tags. *Example:* `Futuristic, Driving, Confident, Euphoric` |
-| **I** | `Use Cases` | Text (CSV) | **Yes** | Comma-separated sync scenarios. *Example:* `Automotive Ads, SaaS Demos, Tech Launches` |
-| **J** | `Audio URL` | URL | **Yes** | Direct public link to preview MP3 (128–192 kbps). Hosted on S3, R2, or Supabase. |
-| **K** | `Cover Image URL`| URL | No | High-res album square artwork (1000x1000px JPG/PNG). |
-| **L** | `Standard Price` | Number | **Yes** | Web & Social license price in USD. *Default:* `10` |
-| **M** | `Commercial Price`| Number | **Yes** | Paid Ads & Agency license price in USD. *Default:* `20` |
-| **N** | `Broadcast Price` | Number | **Yes** | TV & Full Buyout license price in USD. *Default:* `40` |
-| **O** | `Status` | Dropdown | **Yes** | Values: `Draft`, `Ready`, `Published`, `Error`. Set to `Ready` to trigger publishing. |
-| **P** | `Live URL` | URL | Output | Auto-populated by Make.com write-back. *Example:* `https://b2bproductionmusic.com/tracks/futuristic-solar-automotive-commercial-soundtrack` |
-| **Q** | `Track ID` | String | Output | Auto-populated by Make.com write-back. *Example:* `trk_46cbb54d241740fa` |
+| Col | Field | Required | Notes |
+| :-: | :-- | :-: | :-- |
+| A | Title | Yes | The track title as shown to buyers. |
+| B | Target Keyword | Yes | The buyer search phrase the page targets; the slug is built from it. It must be unique across the catalog (see §3). |
+| C | Genre | Yes | Dropdown: `Electronic`, `Cinematic`, `Corporate / Tech`, `Hip Hop`, `Indie Rock`, `Folk & Acoustic`, `Ambient`. Any other value is rejected. |
+| D | BPM | Yes | Integer, e.g. `128`. It places the track in a tempo hub (under 90, 90–124, or 125+). |
+| E | Musical Key | No | For example `A Minor`. It is shown as a badge with its Camelot code. |
+| F | Duration | No | `M:SS`. Format the column as *Plain text* so Sheets doesn't turn it into a time of day. |
+| G | Description | Yes | At least 60 characters, and never copied from another row (see §4). Supports simple formatting (see §4). |
+| H | Moods | Yes | Comma-separated, e.g. `Driving, Confident, Euphoric`. |
+| I | Use Cases | Yes | Comma-separated. Each use case gets its own hub page. |
+| J | Audio URL | Yes | A public, compressed preview MP3 (128–192 kbps). The API checks that it responds before publishing. |
+| K | Cover Image URL | No | Square artwork, at least 1000×1000 JPG. If blank, the brand share image is used. |
+| L–N | Standard / Commercial / Broadcast Price | Yes | USD, e.g. `10`, `20`, `40`. Checkout always charges the price stored in the database. |
+| O | Status | Yes | `Draft`, `Ready`, `Published` or `Error`. Set it to **Ready** to publish. |
+| P | Live URL | Output | Written back by Make.com. Leave blank. |
+| Q | Track ID | Output | A numeric ID written back by Make.com. **Never edit it.** It is how later edits update the same page. |
 
 ---
 
-## 3. SEO Target Keyword Strategy Formula
+## 3. Choosing Target Keywords
 
-To achieve top organic rankings, each track's `Target Keyword` should follow this proven formula:
+Build each keyword from four parts:
 
-$$\text{Target Keyword} = [\text{Mood / Tone}] + [\text{Genre / Style}] + [\text{Target Production Use Case}] + [\text{"Music"} \mid \text{"Soundtrack"} \mid \text{"Background Music"}]$$
+**[mood / tone] + [genre / style] + [production use case] + "music" | "soundtrack" | "background music"**
 
-### High-Converting Examples:
-- `cinematic documentary ambient background music` (Genre: Cinematic, Mood: Ambient, Intent: Documentaries)
-- `upbeat corporate tech presentation background music` (Genre: Corporate, Mood: Inspiring, Intent: Tech SaaS)
-- `energetic commercial advertisement soundtrack` (Genre: Electronic, Mood: High-Velocity, Intent: TV/Web Ads)
-- `acoustic folk lifestyle brand commercial music` (Genre: Folk, Mood: Warm, Intent: Fashion & Lifestyle)
-- `dark hybrid trailer brass soundscape` (Genre: Cinematic, Mood: Menacing, Intent: Video Game & Film Trailers)
+Examples:
 
-> [!TIP]
-> **Avoid Keyword Cannibalization**:
-> Never give two tracks the exact same `Target Keyword`. Each track should represent a distinct sub-niche (e.g., one for *"automotive commercial music"*, another for *"crypto fintech explainer music"*).
+- `cinematic documentary ambient background music`
+- `upbeat corporate tech presentation background music`
+- `energetic commercial advertisement soundtrack`
+- `warm acoustic folk lifestyle brand commercial music`
+- `dark hybrid trailer brass soundscape`
 
----
+Rules:
 
-## 4. Make.com Scenario Configuration (Step-by-Step)
-
-The Make.com scenario consists of 3 straightforward modules:
-
-### Module 1: Google Sheets — "Search Rows" (or "Watch New Rows")
-- **Spreadsheet**: Select `B2B Music Master Index`
-- **Sheet**: `Sheet1`
-- **Filter**:
-  - `Status` **Equal to (case insensitive)** `Ready`
-- **Maximum number of returned rows**: `5` *(processes in controlled batches to avoid API timeouts)*
+- **One keyword per track.** The API rejects a duplicate Target Keyword (HTTP 409) so that two pages never compete for the same search.
+- **Use real buyer phrasing.** Write it the way an editor would type it into Google, not the way you'd name the track internally.
+- **Choose it with care.** Once a track is published, its URL stays the same even if you change the keyword later.
 
 ---
 
-### Module 2: HTTP — "Make a request"
-- **URL**: `https://<your-vercel-domain>/api/track-pages`
-- **Method**: `POST`
-- **Headers**:
-  1. `Authorization`: `Bearer <INGESTION_API_KEY>`
-  2. `Content-Type`: `application/json`
-- **Body Type**: `Raw`
-- **Content type**: `JSON (application/json)`
-- **Request Content**:
+## 4. Writing descriptions that rank
 
-```json
-{
-  "id": "{{1.Q}}",
-  "title": "{{1.A}}",
-  "targetKeyword": "{{1.B}}",
-  "genre": "{{1.C}}",
-  "bpm": {{1.D}},
-  "musicalKey": "{{1.E}}",
-  "duration": "{{1.F}}",
-  "description": "{{1.G}}",
-  "moods": {{split(1.H; ", ")}},
-  "useCases": {{split(1.I; ", ")}},
-  "audioUrl": "{{1.J}}",
-  "coverImageUrl": "{{1.K}}",
-  "prices": {
-    "standard": {{1.L}},
-    "agency": {{1.M}},
-    "broadcast": {{1.N}}
-  }
-}
+Google skips thin or near-duplicate pages. Every description should be specific to its track:
+
+- What the track sounds like: instrumentation, arc, and where it builds or drops.
+- Where it works in an edit: under voiceover, for a logo sting, or for a 30-second cutdown.
+- Who it's for: the use cases in column I.
+
+The Description cell supports simple formatting:
+
+| You type | Page shows |
+|---|---|
+| A blank line between paragraphs | Separate paragraphs |
+| Lines starting with `- ` | A bulleted list |
+| `**text**` | **Bold** |
+
+HTML is not rendered. It shows as plain text.
+
+---
+
+## 5. Editing a published track
+
+1. Change the row: price, description, moods and so on. Leave **Track ID** as it is.
+2. Set **Status** back to **Ready**.
+3. Make.com sends the row again with its Track ID. The API updates the existing record, keeps the same URL, and refreshes that page and its hubs.
+
+---
+
+## 6. Test batch
+
+Use `fixtures/sample-track-index.csv` as a template. To validate a batch without publishing anything:
+
+```bash
+npm run import:sheet -- fixtures/sample-track-index.csv --dry-run
 ```
 
-*(Note: `{{split(1.H; ", ")}}` converts the comma-separated string into a clean JSON array).*
+The README explains how to publish a batch to staging.
 
 ---
 
-### Module 3: Google Sheets — "Update a Row"
-- **Spreadsheet**: Select `B2B Music Master Index`
-- **Sheet**: `Sheet1`
-- **Row number**: `{{1.__ROW_NUMBER__}}`
-- **Field Mappings**:
-  - `Status` (Col O): `Published`
-  - `Live URL` (Col P): `{{2.data.data.liveUrl}}`
-  - `Track ID` (Col Q): `{{2.data.data.id}}`
+## 7. Audio hosting
 
----
-
-## 5. How Idempotency Protects Long-Term Edits
-
-When the client edits an existing track 6 months from now (e.g. updating pricing from \$10 to \$15, refining the description, or adding new use-case tags):
-
-1. The client modifies the row in Google Sheets.
-2. The client sets `Status` back to `Ready`.
-3. The Make.com scenario triggers and passes the payload containing `id: trk_...`.
-4. The API recognizes the existing record in Neon Postgres:
-   - **Canonical Slug Retained**: It **does NOT** change the URL or append `-2`.
-   - **In-Place DB Update**: It updates the fields in PostgreSQL immediately.
-   - **Instant ISR Revalidation**: It flushes the Vercel cache for that specific URL.
-   - **Search Engine Ranking Preserved**: Backlinks, Google bookmarks, and rankings remain intact.
-
----
-
-## 6. Copy-Paste CSV Sample Template
-
-You can import this directly into Google Sheets to initialize your master index:
-
-```csv
-Title,Target Keyword,Genre,BPM,Musical Key,Duration,Description,Moods,Use Cases,Audio URL,Cover Image URL,Standard Price,Commercial Price,Broadcast Price,Status,Live URL,Track ID
-Apex Solar Pulse,futuristic solar automotive commercial soundtrack,Electronic,128,A Minor,2:45,"High-energy analog synth pulse built for EV commercials and tech launches. Features pulsing arpeggios and punchy low-end headroom calibrated for voiceovers.","Futuristic, Confident, Driving, Tech","Automotive Commercials, Tech Launch, YouTube Promo",https://storage.googleapis.com/b2bmusic-audio/apex-solar-pulse.mp3,https://b2bmusic.vercel.app/banners/banner-spark-energy.jpg,10,20,40,Ready,,
-Neon Horizon,synthwave driving city night soundtrack,Electronic,118,F Minor,3:12,"Atmospheric synthwave and analog tape chords evoking late-night highway city driving. Ideal for tech podcasts and SaaS product videos.","Atmospheric, Retro, Melancholic, Chill","SaaS Explainer, Podcast Intro, Brand Reel",https://storage.googleapis.com/b2bmusic-audio/neon-horizon.mp3,https://b2bmusic.vercel.app/banners/banner-dj-producer.jpg,10,20,40,Ready,,
-Titan Ascent,cinematic hybrid orchestral trailer music,Cinematic,96,D Minor,2:30,"Epic hybrid orchestral cues featuring massive brass swells, taiko percussion hits, and sub-bass impacts. Calibrated for theatrical film trailers and gaming spots.","Epic, Powerful, Heroic, Dramatic","Movie Trailers, Video Games, Sports Broadcasts",https://storage.googleapis.com/b2bmusic-audio/titan-ascent.mp3,https://b2bmusic.vercel.app/banners/banner-festival-stage.jpg,10,20,40,Ready,,
-Acoustic Meadow,warm acoustic folk lifestyle brand commercial music,Folk,104,G Major,2:50,"Handcrafted Martin acoustic guitars with warm upright bass and subtle organic shaker percussion. Perfect for sustainable lifestyle and coffee brand spots.","Warm, Organic, Earthy, Uplifting","Lifestyle Commercials, Food & Beverage, Travel Documentaries",https://storage.googleapis.com/b2bmusic-audio/acoustic-meadow.mp3,https://b2bmusic.vercel.app/banners/banner-crowd-amber.jpg,10,20,40,Ready,,
-```
-
----
-
-## 7. Audio File Hosting Best Practices
-
-- **Recommended Host**: **Cloudflare R2** (Zero egress fees) or **AWS S3** / **Google Cloud Storage**.
-- **CORS Configuration**: Allow `GET` requests with `Access-Control-Allow-Origin: *` so the Next.js HTML5 audio player and waveform engine can stream and analyze the audio buffer.
-- **Bitrate**: Export preview files at `192 kbps MP3` (CBR or VBR) for the fastest playback start time without sacrificing fidelity.
+- **Host:** Cloudflare R2 (no egress fees), AWS S3 or Google Cloud Storage. The URL must be public and must not expire.
+- **Preview files:** 128–192 kbps MP3. Previews only load when a visitor presses play, so file size doesn't slow down page loads, but smaller files start playing sooner.
+- **CORS:** allow `GET` from the site's domain.

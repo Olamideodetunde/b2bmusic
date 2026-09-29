@@ -11,43 +11,58 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        // ── Neon Crimson brand palette ──────────────────────────
-        crimson: {
-          50:  "#fff1f1",
-          100: "#ffe1e1",
-          200: "#ffc7c7",
-          300: "#fca5a5",
-          400: "#f87171",
-          500: "#ef4444",
-          600: "#dc2626",
-          700: "#b91c1c",
-          800: "#991b1b",
-          900: "#7f1d1d",
-          950: "#450a0a",
+        // ── Brand palette — sampled from the GlobalB2BAudioHolding logo ──
+        // Royal blue: "B2B" wordmark + right-hand waveform bars.
+        brand: {
+          50:  "#eef5ff",
+          100: "#d9e8ff",
+          200: "#bcd6ff",
+          300: "#8ebcff",
+          400: "#5a9bff",
+          500: "#2a7bff",
+          600: "#0a64f0",
+          700: "#0752c4",
+          800: "#0b449b",
+          900: "#10397a",
+          950: "#0e2449",
         },
-        // ── Deep Obsidian Void palette (Futurist Dark Glass) ──
-        obsidian: {
-          950: "#060608",
-          900: "#0b0b0f",
-          850: "#101016",
-          800: "#15151e",
-          700: "#1e1e2b",
-          600: "#272738",
-          500: "#38384f",
-          400: "#71718a",
-          300: "#a1a1ba",
-          200: "#d1d1e3",
+        // Gold: play-button rim, ".com" and tagline dots. Premium accent only.
+        gold: {
+          50:  "#fdf8ec",
+          100: "#faefd0",
+          200: "#f5df9f",
+          300: "#f0cd6c",
+          400: "#e2b654",
+          500: "#cfa044",
+          600: "#b98a3a",
+          700: "#946b2c",
+          800: "#735226",
+          900: "#5c4222",
+          950: "#34240f",
+        },
+        // Navy: the logo's "Global…AudioHolding" ink (#102038), deepened for surfaces.
+        navy: {
+          950: "#050b17",
+          900: "#081223",
+          850: "#0b172b",
+          800: "#0f1e36",
+          700: "#152a4a",
+          600: "#1e365c",
+          500: "#2d4a76",
+          400: "#6c80a5",
+          300: "#9fb1cf",
+          200: "#cfdaec",
           100: "#ffffff",
         },
       },
 
       // ── Typography ─────────────────────────────────────────
       fontFamily: {
-        syne:    ["var(--font-syne)", "system-ui", "sans-serif"],
         jakarta: ["var(--font-jakarta)", "system-ui", "sans-serif"],
         mono:    ["var(--font-jetbrains)", "Consolas", "monospace"],
         sans:    ["var(--font-jakarta)", "system-ui", "sans-serif"],
-        display: ["var(--font-syne)", "system-ui", "sans-serif"],
+        display: ["var(--font-brand)", "Montserrat", "system-ui", "sans-serif"],
+        brand:   ["var(--font-brand)", "Montserrat", "system-ui", "sans-serif"],
       },
 
       // ── Futuristic Animations ─────────────────────────────
@@ -69,8 +84,8 @@ const config: Config = {
           "50%":      { scaleY: "1.6" },
         },
         "glow-pulse": {
-          "0%, 100%": { boxShadow: "0 0 15px rgba(220,38,38,0.3)" },
-          "50%":      { boxShadow: "0 0 35px rgba(220,38,38,0.7), 0 0 60px rgba(220,38,38,0.3)" },
+          "0%, 100%": { boxShadow: "0 0 15px rgba(10,100,240,0.3)" },
+          "50%":      { boxShadow: "0 0 35px rgba(10,100,240,0.7), 0 0 60px rgba(10,100,240,0.3)" },
         },
         float: {
           "0%, 100%": { transform: "translateY(0px)" },
@@ -90,7 +105,7 @@ const config: Config = {
         },
         "border-glow": {
           "0%, 100%": { borderColor: "rgba(255, 255, 255, 0.1)" },
-          "50%":      { borderColor: "rgba(220, 38, 38, 0.6)" },
+          "50%":      { borderColor: "rgba(10, 100, 240, 0.6)" },
         },
         // ── Landing page motion ──
         marquee: {

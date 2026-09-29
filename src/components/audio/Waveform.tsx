@@ -68,12 +68,12 @@ export function Waveform({
             className={cn(
               'flex-1 min-w-px rounded-[1px] transition-colors duration-75',
               played
-                ? 'bg-crimson-500'
+                ? 'bg-brand-500'
                 : previewed
-                  ? 'bg-obsidian-400'
+                  ? 'bg-navy-400'
                   : isActive
-                    ? 'bg-obsidian-500'
-                    : 'bg-obsidian-600 group-hover/wave:bg-obsidian-500',
+                    ? 'bg-navy-500'
+                    : 'bg-navy-600 group-hover/wave:bg-navy-500',
             )}
             style={{ height: `${h}%` }}
           />
@@ -92,11 +92,11 @@ export function Waveform({
       {hoverRatio !== null && (
         <>
           <div
-            className="absolute inset-y-[-2px] w-px bg-crimson-300/80 pointer-events-none"
+            className="absolute inset-y-[-2px] w-px bg-brand-300/80 pointer-events-none"
             style={{ left: `${hoverRatio * 100}%` }}
           />
           <div
-            className="absolute -top-5 -translate-x-1/2 px-1 py-px rounded-sm bg-obsidian-800 border border-white/10 text-[10px] leading-3 font-mono tabular-nums text-zinc-100 pointer-events-none whitespace-nowrap z-10"
+            className="absolute -top-5 -translate-x-1/2 px-1 py-px rounded-sm bg-navy-800 border border-white/10 text-[10px] leading-3 font-mono tabular-nums text-slate-100 pointer-events-none whitespace-nowrap z-10"
             style={{ left: `${Math.min(94, Math.max(6, hoverRatio * 100))}%` }}
           >
             {formatDuration(Math.floor(hoverRatio * durationSeconds))}

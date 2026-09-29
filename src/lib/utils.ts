@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { BRAND } from './brand';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -20,7 +21,7 @@ export function formatPrice(cents: number): string {
 }
 
 /**
- * Returns a guaranteed valid, normalized absolute site URL (e.g. https://b2bmusic.vercel.app).
+ * Returns a guaranteed valid, normalized absolute site URL (e.g. https://globalb2baudioholding.com).
  * Prevents ERR_INVALID_URL when NEXT_PUBLIC_SITE_URL is set to localhost without protocol or domain without https.
  */
 export function getSiteUrl(): string {
@@ -34,7 +35,7 @@ export function getSiteUrl(): string {
   }
 
   if (!raw) {
-    raw = 'https://b2bproductionmusic.com';
+    raw = `https://${BRAND.domain}`;
   }
 
   raw = raw.trim();
@@ -50,7 +51,7 @@ export function getSiteUrl(): string {
     const parsed = new URL(raw);
     return parsed.origin;
   } catch {
-    return 'https://b2bproductionmusic.com';
+    return `https://${BRAND.domain}`;
   }
 }
 
@@ -116,4 +117,35 @@ export function catalogStats(tracks: { bpm: number; musicalKey: string; stems?: 
     { value: String(keys), label: keys === 1 ? 'Musical key' : 'Musical keys' },
     { value: String(stems), label: 'Isolated stems' },
   ];
+}
+
+/** Plain-text excerpt for meta descriptions: strips **markup**, collapses whitespace, cuts on a word boundary. */
+export function excerpt(text: string, max: number): string {
+  const clean = (text || '').replace(/\*\*/g, '').replace(/^\s*[-*•]\s+/gm, '').replace(/\s+/g, ' ').trim();
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max - 1);
+  const space = cut.lastIndexOf(' ');
+  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s,.;:–—-]+$/, '')}…`;
+}
+
+/** "tech corporate background music" → "Tech Corporate Background Music" (keeps existing capitals like "SaaS"). */
+export function titleCase(text: string): string {
+  return text.replace(/\b([a-z])/g, (m) => m.toUpperCase());
+}
+
+/** Makes a site-relative asset path absolute; leaves full URLs untouched. */
+export function absoluteUrl(pathOrUrl: string, siteUrl: string): string {
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  return `${siteUrl}${pathOrUrl.startsWith('/') ? '' : '/'}${pathOrUrl}`;
+}
+
+/**
+ * Only the production deployment may be indexed. On Vercel, Preview/Development
+ * deployments (staging) are noindex automatically; on other hosts set NOINDEX=true
+ * for staging.
+ */
+export function isIndexable(): boolean {
+  if (process.env.NOINDEX === 'true') return false;
+  if (process.env.VERCEL_ENV) return process.env.VERCEL_ENV === 'production';
+  return true;
 }

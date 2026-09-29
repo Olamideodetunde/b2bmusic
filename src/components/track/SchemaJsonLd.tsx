@@ -1,7 +1,9 @@
 import React from 'react';
 import { Track } from '@/lib/db/types';
-import { toSlug } from '@/lib/utils';
+import { toSlug, absoluteUrl } from '@/lib/utils';
 import { LICENSE_TIERS, tierPriceCents } from '@/lib/licensing';
+import { BRAND } from '@/lib/brand';
+import { breadcrumbSchema as buildBreadcrumbs } from '@/lib/seo/hubs';
 
 interface SchemaJsonLdProps {
   track: Track;
@@ -17,21 +19,20 @@ export function SchemaJsonLd({ track, siteUrl }: SchemaJsonLdProps) {
     '@type': 'AudioObject',
     name: track.title,
     description: track.description,
-    contentUrl: track.previewAudioUrl,
+    // Google requires absolute URLs; the sheet may supply site-relative paths.
+    contentUrl: absoluteUrl(track.previewAudioUrl, siteUrl),
     encodingFormat: 'audio/mpeg',
     duration: `PT${track.durationSeconds}S`,
     genre: track.genre,
     author: {
       '@type': 'Organization',
-      name: 'B2B Production Music',
+      name: BRAND.name,
       url: siteUrl,
     },
   };
 
   // 2. Product Structured Data with 3 Tiers
-  const coverUrl = track.coverImageUrl
-    ? (track.coverImageUrl.startsWith('http') ? track.coverImageUrl : `${siteUrl}${track.coverImageUrl.startsWith('/') ? '' : '/'}${track.coverImageUrl}`)
-    : `${siteUrl}/images/default-cover.jpg`;
+  const coverUrl = track.coverImageUrl ? absoluteUrl(track.coverImageUrl, siteUrl) : `${siteUrl}${BRAND.ogImagePath}`;
 
   const productSchema = {
     '@context': 'https://schema.org',
@@ -43,7 +44,7 @@ export function SchemaJsonLd({ track, siteUrl }: SchemaJsonLdProps) {
     category: `Production Music > ${track.genre}`,
     brand: {
       '@type': 'Brand',
-      name: 'B2B Production Music',
+      name: BRAND.name,
     },
     // No aggregateRating: there are no real reviews, and fabricated review markup
     // violates Google's structured-data policies (risking a manual action).
@@ -56,36 +57,22 @@ export function SchemaJsonLd({ track, siteUrl }: SchemaJsonLdProps) {
       url: pageUrl,
       seller: {
         '@type': 'Organization',
-        name: 'B2B Production Music',
+        name: BRAND.name,
       },
     })),
   };
 
-  // 3. BreadcrumbList Structured Data
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'Catalog',
-        item: siteUrl,
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
-        name: track.genre,
-        item: `${siteUrl}/genres/${toSlug(track.genre)}`,
-      },
-      {
-        '@type': 'ListItem',
-        position: 3,
-        name: track.title,
-        item: pageUrl,
-      },
+  // 3. BreadcrumbList — mirrors the visible trail: Home › Genres › <genre> › <title>
+  const breadcrumbSchema = buildBreadcrumbs(
+    siteUrl,
+    [
+      { href: '/', label: 'Home' },
+      { href: '/genres', label: 'Genres' },
+      { href: `/genres/${toSlug(track.genre)}`, label: track.genre },
+      { label: track.title },
     ],
-  };
+    pageUrl,
+  );
 
   return (
     <>

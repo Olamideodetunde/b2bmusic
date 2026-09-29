@@ -46,21 +46,21 @@ export function FilterPopover({
         className={cn(
           'inline-flex items-center gap-1.5 h-7 pl-2.5 pr-1.5 rounded-md border text-xs transition-colors whitespace-nowrap',
           active
-            ? 'border-crimson-500/50 bg-crimson-600/10 text-crimson-200'
-            : 'border-white/[0.08] text-zinc-300 hover:border-white/20 hover:text-white',
+            ? 'border-brand-500/50 bg-brand-600/10 text-brand-200'
+            : 'border-white/[0.08] text-slate-300 hover:border-white/20 hover:text-white',
           open && !active && 'border-white/20 text-white',
         )}
       >
         <span className="font-medium">{label}</span>
-        {value && <span className={cn('font-mono tabular-nums text-[11px]', active ? 'text-crimson-300' : 'text-zinc-500')}>{value}</span>}
-        <ChevronDown className={cn('w-3 h-3 text-zinc-500 transition-transform', open && 'rotate-180')} />
+        {value && <span className={cn('font-mono tabular-nums text-[11px]', active ? 'text-brand-300' : 'text-slate-500')}>{value}</span>}
+        <ChevronDown className={cn('w-3 h-3 text-slate-500 transition-transform', open && 'rotate-180')} />
       </button>
       {open && (
         <div
           role="dialog"
           aria-label={`${label} filter`}
           className={cn(
-            'absolute top-full mt-1 z-30 rounded-md bg-obsidian-850 border border-white/10 shadow-xl shadow-black/60',
+            'absolute top-full mt-1 z-30 rounded-md bg-navy-850 border border-white/10 shadow-xl shadow-black/60',
             align === 'right' ? 'right-0' : 'left-0',
             panelClassName,
           )}
@@ -94,18 +94,18 @@ export function CheckList({
               onClick={() => onToggle(opt)}
               role="checkbox"
               aria-checked={checked}
-              className="flex items-center gap-2 w-full h-7 px-2.5 text-xs text-left text-zinc-300 hover:bg-white/[0.06] hover:text-white"
+              className="flex items-center gap-2 w-full h-7 px-2.5 text-xs text-left text-slate-300 hover:bg-white/[0.06] hover:text-white"
             >
               <span
                 className={cn(
                   'w-3.5 h-3.5 rounded-sm border inline-flex items-center justify-center shrink-0',
-                  checked ? 'bg-crimson-600 border-crimson-500 text-white' : 'border-obsidian-500',
+                  checked ? 'bg-brand-600 border-brand-500 text-white' : 'border-navy-500',
                 )}
               >
                 {checked && <Check className="w-2.5 h-2.5 stroke-[3]" />}
               </span>
               <span className="flex-1 truncate">{opt}</span>
-              {counts && <span className="text-[10px] font-mono tabular-nums text-zinc-500">{counts[opt] ?? 0}</span>}
+              {counts && <span className="text-[10px] font-mono tabular-nums text-slate-500">{counts[opt] ?? 0}</span>}
             </button>
           </li>
         );
@@ -136,7 +136,7 @@ export function Segmented<T extends string>({
           onClick={() => onChange(opt.value)}
           className={cn(
             'px-2 h-full rounded-[4px] text-[11px] font-medium whitespace-nowrap transition-colors',
-            value === opt.value ? 'bg-white/[0.08] text-white' : 'text-zinc-500 hover:text-zinc-200',
+            value === opt.value ? 'bg-white/[0.08] text-white' : 'text-slate-500 hover:text-slate-200',
           )}
         >
           {opt.label}
@@ -162,9 +162,9 @@ export function DualRange({
   const pct = (v: number) => ((v - min) / (max - min)) * 100;
   return (
     <div className="relative h-5">
-      <div className="absolute top-1/2 -translate-y-1/2 inset-x-0 h-1 rounded-full bg-obsidian-700" />
+      <div className="absolute top-1/2 -translate-y-1/2 inset-x-0 h-1 rounded-full bg-navy-700" />
       <div
-        className="absolute top-1/2 -translate-y-1/2 h-1 rounded-full bg-crimson-600"
+        className="absolute top-1/2 -translate-y-1/2 h-1 rounded-full bg-brand-600"
         style={{ left: `${pct(lo)}%`, right: `${100 - pct(hi)}%` }}
       />
       <input

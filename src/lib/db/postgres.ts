@@ -228,4 +228,12 @@ export class PostgresRepository implements TrackRepository {
     );
     return rows.length > 0;
   }
+
+  async markOrderRefunded(stripeSessionId: string): Promise<boolean> {
+    const { rows } = await this.db.query(
+      `UPDATE orders SET status = 'refunded' WHERE stripe_session_id = $1 AND status <> 'refunded' RETURNING id`,
+      [stripeSessionId],
+    );
+    return rows.length > 0;
+  }
 }

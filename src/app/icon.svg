@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="314 10 800 800">
+  <defs>
+    <linearGradient id="l" gradientUnits="userSpaceOnUse" x1="0" y1="200" x2="0" y2="620"><stop offset="0" stop-color="#2a7bff"/><stop offset="0.2" stop-color="#5a9bff"/><stop offset="0.4" stop-color="#bcd6ff"/><stop offset="0.55" stop-color="#eef3fa"/><stop offset="1" stop-color="#eef3fa"/></linearGradient>
+    <linearGradient id="r" gradientUnits="userSpaceOnUse" x1="0" y1="240" x2="0" y2="590"><stop offset="0" stop-color="#0670ff"/><stop offset="0.26" stop-color="#096aec"/><stop offset="0.77" stop-color="#0b52b8"/><stop offset="1" stop-color="#0b52b8"/></linearGradient>
+    <linearGradient id="p" gradientUnits="userSpaceOnUse" x1="634" y1="300" x2="780" y2="520"><stop offset="0" stop-color="#0d3a78"/><stop offset="1" stop-color="#0f2442"/></linearGradient>
+    <linearGradient id="g" gradientUnits="userSpaceOnUse" x1="634" y1="0" x2="826" y2="0"><stop offset="0" stop-color="#8a6a2e" stop-opacity="0.8"/><stop offset="0.45" stop-color="#cfa044"/><stop offset="0.8" stop-color="#f0cd6c"/><stop offset="1" stop-color="#f5df9f"/></linearGradient>
+    <mask id="m" maskUnits="userSpaceOnUse" x="314" y="10" width="800" height="800"><rect x="314" y="10" width="800" height="800" fill="#fff"/><path d="M636 302 L822 418 L636 534 Z" fill="#000" stroke="#000" stroke-width="34" stroke-linejoin="round"/></mask>
+  </defs>
+  <rect x="314" y="10" width="800" height="800" rx="170" fill="#081223"/>
+  <g fill="url(#l)">
+    <rect x="388" y="388" width="38" height="75" rx="19"/>
+    <rect x="442" y="344" width="46" height="155" rx="23"/>
+    <rect x="504" y="278" width="46" height="273" rx="23"/>
+    <rect x="566" y="206" width="46" height="409" rx="23"/>
+  </g>
+  <g fill="url(#r)">
+    <rect x="810" y="297" width="46" height="244" rx="23" mask="url(#m)"/>
+    <rect x="872" y="239" width="46" height="349" rx="23"/>
+    <rect x="934" y="317" width="46" height="195" rx="23"/>
+    <rect x="997" y="376" width="41" height="90" rx="20.5"/>
+  </g>
+  <path d="M636 302 L822 418 L636 534 Z" fill="url(#p)" stroke="url(#g)" stroke-width="9" stroke-linejoin="round"/>
+</svg>

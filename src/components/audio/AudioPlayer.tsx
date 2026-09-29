@@ -26,9 +26,9 @@ interface AudioPlayerProps {
 }
 
 const toolBtn =
-  'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-white/[0.08] text-xs text-zinc-300 hover:text-white hover:border-white/20 transition-colors';
+  'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-white/[0.08] text-xs text-slate-300 hover:text-white hover:border-white/20 transition-colors';
 const iconBtn =
-  'inline-flex items-center justify-center w-7 h-7 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors';
+  'inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors';
 
 export function AudioPlayer({ track }: AudioPlayerProps) {
   const {
@@ -95,10 +95,10 @@ export function AudioPlayer({ track }: AudioPlayerProps) {
       {/* ─── Header ─── */}
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-2.5 border-b border-white/[0.06]">
         <div className="flex items-center gap-2">
-          <AudioLines className="w-3.5 h-3.5 text-crimson-500" />
-          <span className="label-xs !text-zinc-300">Sync Editor Deck</span>
-          <span className="text-obsidian-500">·</span>
-          <span className="text-[11px] font-mono text-zinc-400">
+          <AudioLines className="w-3.5 h-3.5 text-brand-500" />
+          <span className="label-xs !text-slate-300">Sync Editor Deck</span>
+          <span className="text-navy-500">·</span>
+          <span className="text-[11px] font-mono text-slate-400">
             {isThisTrack ? activeMixName : 'Full Mix'}
           </span>
         </div>
@@ -106,13 +106,13 @@ export function AudioPlayer({ track }: AudioPlayerProps) {
         <div className="flex items-center gap-1.5">
           {track.syncMeta?.isrc && (
             <button onClick={handleCopyIsrc} className={cn(toolBtn, 'font-mono')} title="Copy ISRC for cue sheet">
-              {copiedIsrc ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-zinc-500" />}
+              {copiedIsrc ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
               <span className="tabular-nums">{track.syncMeta.isrc}</span>
             </button>
           )}
           <button
             onClick={() => toggleProject(track.id)}
-            className={cn(toolBtn, saved && 'border-crimson-500/50 text-crimson-300')}
+            className={cn(toolBtn, saved && 'border-brand-500/50 text-brand-300')}
             aria-pressed={saved}
           >
             {saved ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
@@ -120,8 +120,8 @@ export function AudioPlayer({ track }: AudioPlayerProps) {
           </button>
           {track.stems && track.stems.length > 0 && (
             <button onClick={() => openStems(track)} className={toolBtn}>
-              <Layers className="w-3.5 h-3.5 text-crimson-400" />
-              Stems <span className="font-mono tabular-nums text-zinc-500">{track.stems.length}</span>
+              <Layers className="w-3.5 h-3.5 text-brand-400" />
+              Stems <span className="font-mono tabular-nums text-slate-500">{track.stems.length}</span>
             </button>
           )}
         </div>
@@ -132,7 +132,7 @@ export function AudioPlayer({ track }: AudioPlayerProps) {
         <div className="flex items-center gap-4">
           <button
             onClick={handlePlayClick}
-            className="w-11 h-11 shrink-0 rounded-full bg-crimson-600 hover:bg-crimson-500 text-white flex items-center justify-center transition-colors"
+            className="w-11 h-11 shrink-0 rounded-full bg-brand-600 hover:bg-brand-500 text-white flex items-center justify-center transition-colors"
             aria-label={isCurrentlyPlaying ? 'Pause' : 'Play'}
           >
             {isCurrentlyPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
@@ -150,11 +150,11 @@ export function AudioPlayer({ track }: AudioPlayerProps) {
 
         <div className="flex flex-wrap items-center justify-between gap-3 mt-3 pl-[60px]">
           <div className="flex items-center gap-1">
-            <span className="text-xs font-mono tabular-nums text-zinc-200 w-10">
+            <span className="text-xs font-mono tabular-nums text-slate-200 w-10">
               {isThisTrack ? formatDuration(currentTime) : '0:00'}
             </span>
-            <span className="text-xs font-mono text-zinc-600">/</span>
-            <span className="text-xs font-mono tabular-nums text-zinc-500 w-10 pl-1">{formatDuration(effectiveDuration)}</span>
+            <span className="text-xs font-mono text-slate-600">/</span>
+            <span className="text-xs font-mono tabular-nums text-slate-500 w-10 pl-1">{formatDuration(effectiveDuration)}</span>
 
             <span className="w-px h-4 bg-white/[0.08] mx-2" />
             <button onClick={() => seek(0)} className={iconBtn} title="Restart track" disabled={!isThisTrack}>
@@ -162,7 +162,7 @@ export function AudioPlayer({ track }: AudioPlayerProps) {
             </button>
             <button
               onClick={toggleLoop}
-              className={cn(iconBtn, isLooping && 'text-crimson-400 bg-crimson-600/15')}
+              className={cn(iconBtn, isLooping && 'text-brand-400 bg-brand-600/15')}
               title={isLooping ? 'Loop on' : 'Loop off'}
               aria-pressed={isLooping}
             >
@@ -183,14 +183,14 @@ export function AudioPlayer({ track }: AudioPlayerProps) {
                 step="0.05"
                 value={volume}
                 onChange={(e) => setVolume(parseFloat(e.target.value))}
-                className="w-20 h-1 bg-obsidian-700 rounded-lg appearance-none cursor-pointer accent-crimson-500"
+                className="w-20 h-1 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-brand-500"
                 aria-label="Volume"
               />
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">24-bit / 48kHz WAV</span>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500" title="The license delivers the full-quality WAV master">MP3 preview · WAV on license</span>
             <a
               href={track.previewAudioUrl}
               download={`${track.slug}-preview.mp3`}
@@ -222,22 +222,22 @@ export function AudioPlayer({ track }: AudioPlayerProps) {
               onClick={() => handleMixClick(mix)}
               className={cn(
                 'group w-full grid grid-cols-[28px_minmax(0,1fr)_88px_52px] gap-3 items-center px-4 sm:px-6 py-2 text-left border-t border-white/[0.04] transition-colors',
-                isMixActive ? 'bg-crimson-600/[0.07] shadow-[inset_2px_0_0_#DC2626]' : 'hover:bg-obsidian-900/60',
+                isMixActive ? 'bg-brand-600/[0.07] shadow-[inset_2px_0_0_#0a64f0]' : 'hover:bg-navy-900/60',
               )}
             >
               <span
                 className={cn(
                   'w-6 h-6 rounded-full inline-flex items-center justify-center',
-                  isMixActive ? 'bg-crimson-600 text-white' : 'text-zinc-500 group-hover:text-white group-hover:bg-white/[0.08]',
+                  isMixActive ? 'bg-brand-600 text-white' : 'text-slate-500 group-hover:text-white group-hover:bg-white/[0.08]',
                 )}
               >
                 {isMixActive && isPlaying ? <Pause className="w-2.5 h-2.5 fill-current" /> : <Play className="w-2.5 h-2.5 fill-current ml-px" />}
               </span>
-              <span className={cn('text-[13px] truncate', isMixActive ? 'text-crimson-200 font-medium' : 'text-zinc-200')}>
+              <span className={cn('text-[13px] truncate', isMixActive ? 'text-brand-200 font-medium' : 'text-slate-200')}>
                 {mix.name}
               </span>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">{mix.type}</span>
-              <span className="text-xs font-mono tabular-nums text-zinc-400 text-right">{formatDuration(mix.durationSeconds)}</span>
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">{mix.type}</span>
+              <span className="text-xs font-mono tabular-nums text-slate-400 text-right">{formatDuration(mix.durationSeconds)}</span>
             </button>
           );
         })}

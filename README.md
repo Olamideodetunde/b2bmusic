@@ -1,4 +1,4 @@
-# B2BProductionMusic.com — Programmatic Landing Page Infrastructure
+# GlobalB2BAudioHolding.com — Programmatic Landing Page Infrastructure
 
 Every track in the Google Sheet master index gets its own SEO landing page, published automatically:
 
@@ -21,13 +21,13 @@ Google Sheet ──(Status = Ready)──▶ Make.com ──POST /api/tracks─�
 | Email | Brevo (publish alerts, purchase receipts) | `src/lib/email/brevo.ts` |
 | Payments | Stripe Checkout + webhook | `src/app/api/checkout`, `src/app/api/stripe` |
 
-More docs: **[API reference](docs/api.md)** · **[Make.com scenario](docs/make-scenario.md)** · **[Production cutover](docs/cutover.md)** (upgrading the existing Neon database)
+More docs: **[API reference](docs/api.md)** · **[Make.com scenario](docs/make-scenario.md)** · **[Keyword index guide](docs/MASTER_KEYWORD_PIPELINE.md)** · **[Production cutover](docs/cutover.md)** (upgrading the existing Neon database)
 
 ---
 
 ## Quick start (local, no accounts needed)
 
-Requires Node 20.11+ (Node 22+ to run the test suite).
+Requires Node 20.12+ (Node 22+ to run the test suite).
 
 ```bash
 npm install
@@ -59,10 +59,11 @@ Step 3 writes `fixtures/sample-track-index.results.csv` with the write-back colu
 | Command | What it does |
 |---|---|
 | `npm run dev` / `build` / `start` | Next.js |
-| `npm test` | 28 tests: sheet parsing + the full publish rules, run against real Postgres (PGlite, using the production migrations) **and** the local store |
+| `npm test` | 45 tests: sheet parsing, API auth, SEO helpers, backup restore and the full publish rules, run against real Postgres (PGlite, using the production migrations) **and** the local store |
 | `npm run typecheck` | TypeScript |
 | `npm run db:migrate` | Applies `db/migrations/*.sql` to `DATABASE_URL`. Idempotent — run on every deploy |
 | `npm run db:seed` | Loads the demo catalog through the publish pipeline. Idempotent |
+| `npm run db:restore -- <backup.json>` | Loads a JSON backup into a new side table for inspection or recovery (see [cutover](docs/cutover.md#rollback)) |
 | `npm run import:sheet -- <file.csv>` | Bulk-publish test batch / Make.com stand-in (`--dry-run`, `--api <url>`) |
 
 > Never run `npm run build` while `npm run dev` is running — both write to `.next/` and the dev server will start serving 500s with no styles. If that happens: stop the dev server, delete `.next`, and start it again.
@@ -95,8 +96,15 @@ These mirror the sheet's **How to use** tab. They're implemented in `src/lib/ing
 - A unique `<title>`, description, canonical URL and Open Graph tags per track, built from the track's own keyword and description.
 - Structured data: **Product** (three license Offers), **AudioObject**, **BreadcrumbList**, and **CollectionPage/ItemList** on hub pages. There is deliberately **no** `aggregateRating`: the original template shipped a hard-coded 4.9★ rating, which Google treats as fake review markup.
 - Hub pages for **genre** (`/genres/*`), **use case** (`/use-cases/*`) and **tempo** (`/bpm/under-90-bpm`, `/bpm/90-124-bpm`, `/bpm/125-plus-bpm`). Every track is linked from at least three hubs, the home catalog and the sitemap, and each track page links back to its genre and tempo hubs. No page is orphaned.
+  - Directory pages at `/genres`, `/use-cases` and `/bpm` list every hub. Breadcrumbs (visible and BreadcrumbList schema) follow the same trail: Home › Genres › Cinematic › Track.
+  - Hub copy and meta descriptions are **written from each hub's own tracks**: count, tempo range, genres, moods and use cases. No two hubs share text.
+  - **Thin hubs are held back.** A hub with fewer than 2 tracks (`MIN_INDEXABLE_HUB_TRACKS` in `src/lib/seo/hubs.ts`) renders and passes links, but is `noindex` and kept out of the sitemap. It becomes indexable on its own as soon as a second track joins.
 - `/sitemap.xml` (per-track `lastmod`) and `/robots.txt` (API routes disallowed).
-- Core Web Vitals: the audio loads only on play (`preload="none"`), cover images have explicit dimensions, and list thumbnails lazy-load.
+- **Staging is never indexed.** Vercel Preview deployments (`VERCEL_ENV` ≠ `production`) serve `noindex` and a `Disallow: /` robots.txt; on other hosts set `NOINDEX=true`.
+- Track titles are keyword-led and kept under ~65 characters; descriptions are trimmed on a word boundary to fit the snippet.
+- Core Web Vitals:
+  - The audio loads only when a visitor presses play (`preload="none"`).
+  - Every image goes through `next/image` (AVIF/WebP, resized per device, lazy-loaded; the hero and cover are prioritised for LCP). Only site images and allow-listed hosts are optimized: `images.unsplash.com`, plus any added in `NEXT_PUBLIC_IMAGE_HOSTS`. A cover on another host still renders, as a lazy `<img>` with fixed dimensions.
 
 ---
 
@@ -120,14 +128,14 @@ The client creates the accounts (proposal §9); these are the configuration step
 
 1. Import the repository. The framework preset is Next.js and the defaults are fine.
 2. Under **Settings → Environment Variables**, set everything in [`.env.example`](.env.example):
-   - **Production** → the Neon production branch, live Stripe keys, `NEXT_PUBLIC_SITE_URL=https://b2bproductionmusic.com`
+   - **Production** → the Neon production branch, live Stripe keys, `NEXT_PUBLIC_SITE_URL=https://globalb2baudioholding.com`
    - **Preview** → the Neon staging branch, Stripe **test** keys, the staging URL
 3. Use the **Pro** plan: Hobby is non-commercial only (proposal §12).
 4. Add the domain under **Settings → Domains**.
 
 ### 3. Stripe
 
-1. Under **Developers → Webhooks**, add the endpoint `https://<domain>/api/stripe/webhook` with the events `checkout.session.completed` and `checkout.session.async_payment_succeeded`.
+1. Under **Developers → Webhooks**, add the endpoint `https://<domain>/api/stripe/webhook` with the events `checkout.session.completed`, `checkout.session.async_payment_succeeded` and `charge.refunded` (a full refund marks the order `refunded`).
 2. Copy the signing secret into `STRIPE_WEBHOOK_SECRET`. Do this separately for test mode (staging) and live mode (production).
 
 Prices come from each track's sheet row. Checkout sessions are created server-side from the database, so the browser can never set a price. Paid orders are stored in `orders` and trigger a Brevo receipt. The receipt includes a download link when the track has a `full_audio_url` set, and otherwise says files will follow from the licensing team.
@@ -175,17 +183,36 @@ Follow **[docs/make-scenario.md](docs/make-scenario.md)**.
 - Format the **Duration** column as *Plain text*. Otherwise Sheets turns `2:45` into a time of day. The API detects and corrects this, but it adds a warning.
 - Optionally add a **Last Error** column (R) and have Make.com write the API's `errorSummary` into it, so the reason is visible next to the row.
 
+## Brand & theme
+
+The site follows the **GlobalB2BAudioHolding.com** logo.
+
+| What | Where |
+|---|---|
+| Name, domain, tagline, contact email, logo paths | `src/lib/brand.ts` (the contact email can be overridden with `NEXT_PUBLIC_CONTACT_EMAIL`) |
+| Color scales: `navy` (surfaces and ink), `brand` (royal blue, primary actions), `gold` (premium accents, used sparingly) | `tailwind.config.ts`, with matching CSS variables in `src/app/globals.css` |
+| Logo component: a vector mark plus a live-text Montserrat wordmark. `tone="onDark"` is the reversed version for the navy site; `tone="onLight"` matches the original artwork. | `src/components/brand/Logo.tsx` |
+| Master logo on white, used for schema.org `Organization.logo` and emails | `public/brand/logo.jpg` |
+| Default share image, 1200×630 | `public/brand/og-default.jpg` |
+| Favicon and Apple touch icon | `src/app/icon.svg`, `src/app/apple-icon.png` |
+
+Transactional emails use a light layout with the full logo, so they look right in every mail client.
+
 ## Project layout
 
 ```
 db/migrations/           SQL migrations (schema: tracks, publish_events, orders)
 docs/                    API reference, Make.com scenario
 fixtures/                sample Google Sheet export
-scripts/                 migrate, seed, import-sheet
+scripts/                 migrate, seed, import-sheet, restore-backup
 src/app/                 pages (home, tracks, genres, use-cases, bpm, pricing) + API routes
+src/components/brand/    logo lockup + mark
+src/components/ui/       CoverImage (next/image with a safe fallback for unknown hosts)
+src/lib/brand.ts         brand identity (name, domain, contact, logo paths)
 src/lib/catalog/         taxonomy: genres, statuses, tempo bands (mirrors the sheet dropdowns)
 src/lib/db/              repository interface, Postgres + local-file implementations
 src/lib/ingest/          sheet-row parsing/validation, publish service, CSV
+src/lib/seo/             slugs, hub SEO (data-driven copy, thin-hub noindex, breadcrumbs)
 src/lib/licensing.ts     license tiers (Standard / Commercial / Broadcast)
 tests/                   node:test suites
 ```

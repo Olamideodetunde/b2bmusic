@@ -1,6 +1,7 @@
 import { requireApiKey, readJsonBody } from '@/lib/api/auth';
 import { handlePublish } from '@/lib/api/publish-handler';
 import { NextResponse } from 'next/server';
+import { BRAND } from '@/lib/brand';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ export async function GET() {
   return NextResponse.json(
     {
       ok: true,
-      service: 'B2B Production Music Ingestion API',
+      service: `${BRAND.name} Ingestion API`,
       status: 'ready',
       method: 'POST',
       acceptedEndpoints: ['/api/tracks', '/api/track-pages', '/api/tracks/ingest'],

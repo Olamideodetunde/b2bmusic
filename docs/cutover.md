@@ -41,4 +41,25 @@ So: **migrate, then deploy straight away.** In the minute or two between the two
 
 ## Rollback
 
-Restore `db/backups/neon-<timestamp>.json`. It contains every column and row as they were before the upgrade. Alternatively, use Neon's point-in-time restore (**Branches → Restore**) to a moment before step 3. That's the fastest route if anything looks wrong.
+**Full rollback: use Neon's point-in-time restore** (**Branches → Restore**) to a moment before step 3, then redeploy the previous app version. It is the fastest route, and the only one that also rolls back `orders` and `publish_events`, which reference `tracks`.
+
+**Recovering data from the JSON backup.** `db/backups/neon-<timestamp>.json` has every column and row as they were before the upgrade. To load it into a *new* side table:
+
+```bash
+npm run db:restore -- db/backups/neon-<timestamp>.json
+```
+
+- The restore never touches the live `tracks` table.
+- It refuses to overwrite an existing table.
+- By default it names the new table `tracks_restored_<timestamp>`. Pass `--into <name>` to choose another.
+
+Compare the restored table with the live one, then copy back only what you need. For example:
+
+```sql
+-- restore one track's description from the backup
+UPDATE tracks t SET description = r.description, updated_at = now()
+FROM tracks_restored_202609291228 r
+WHERE r.id = t.id AND t.id = 12;
+```
+
+Then refresh the pages: `POST /api/revalidate {"all": true}`. When you're done, drop the side table.

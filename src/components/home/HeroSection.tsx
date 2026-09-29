@@ -8,6 +8,7 @@ import { useAudio } from '../audio/GlobalAudioContext';
 import { Waveform } from '../audio/Waveform';
 import { Container, PrimaryButton, GhostButton } from './primitives';
 import { cn, formatDuration, parseMusicalKey } from '@/lib/utils';
+import { CoverImage } from '@/components/ui/CoverImage';
 
 // Graded to monochrome so mixed-colour concert photography reads as one set.
 const SLIDES = [
@@ -37,13 +38,13 @@ function SessionCard({ tracks }: { tracks: Track[] }) {
   };
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-obsidian-950/70 backdrop-blur-xl shadow-2xl shadow-black/60 overflow-hidden">
+    <div className="rounded-2xl border border-white/10 bg-navy-950/70 backdrop-blur-xl shadow-2xl shadow-black/60 overflow-hidden">
       <div className="flex items-center justify-between px-5 h-12 border-b border-white/[0.06]">
         <div className="flex items-center gap-2">
-          <span className={cn('w-1.5 h-1.5 rounded-full', isPlaying ? 'bg-crimson-500' : 'bg-obsidian-500')} />
-          <span className="label-xs !text-zinc-300">Now auditioning</span>
+          <span className={cn('w-1.5 h-1.5 rounded-full', isPlaying ? 'bg-brand-500' : 'bg-navy-500')} />
+          <span className="label-xs !text-slate-300">Now auditioning</span>
         </div>
-        <span className="text-[11px] font-mono text-zinc-500">Brief · Q4 Product Launch</span>
+        <span className="text-[11px] font-mono text-slate-500">Brief · Q4 Product Launch</span>
       </div>
 
       <ul>
@@ -57,7 +58,7 @@ function SessionCard({ tracks }: { tracks: Track[] }) {
               key={track.id}
               className={cn(
                 'group grid grid-cols-[36px_minmax(0,1fr)_auto] sm:grid-cols-[36px_minmax(0,1fr)_112px_auto] items-center gap-4 px-5 py-3 border-b border-white/[0.04] last:border-0 transition-colors',
-                active ? 'bg-crimson-600/[0.08]' : 'hover:bg-white/[0.03]',
+                active ? 'bg-brand-600/[0.08]' : 'hover:bg-white/[0.03]',
               )}
             >
               <button
@@ -65,7 +66,7 @@ function SessionCard({ tracks }: { tracks: Track[] }) {
                 className="relative w-9 h-9 rounded-md overflow-hidden shrink-0"
                 aria-label={active && isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
               >
-                {track.coverImageUrl && <img src={track.coverImageUrl} alt="" className="w-full h-full object-cover" />}
+                {track.coverImageUrl && <CoverImage src={track.coverImageUrl} alt="" size={36} className="w-full h-full object-cover" />}
                 <span
                   className={cn(
                     'absolute inset-0 flex items-center justify-center bg-black/55 text-white transition-opacity',
@@ -79,11 +80,11 @@ function SessionCard({ tracks }: { tracks: Track[] }) {
               <div className="min-w-0">
                 <Link
                   href={`/tracks/${track.slug}`}
-                  className={cn('block text-sm font-semibold tracking-tight truncate', active ? 'text-crimson-300' : 'text-white hover:text-crimson-300')}
+                  className={cn('block text-sm font-semibold tracking-tight truncate', active ? 'text-brand-300' : 'text-white hover:text-brand-300')}
                 >
                   {track.title}
                 </Link>
-                <div className="text-[11px] font-mono tabular-nums text-zinc-500 truncate mt-0.5">
+                <div className="text-[11px] font-mono tabular-nums text-slate-500 truncate mt-0.5">
                   {track.genre} · {track.bpm} BPM · {key.camelot ?? key.short}
                 </div>
               </div>
@@ -101,7 +102,7 @@ function SessionCard({ tracks }: { tracks: Track[] }) {
                 className="hidden sm:flex h-6"
               />
 
-              <span className="text-xs font-mono tabular-nums text-zinc-500 w-9 text-right">
+              <span className="text-xs font-mono tabular-nums text-slate-500 w-9 text-right">
                 {formatDuration(track.durationSeconds)}
               </span>
             </li>
@@ -114,7 +115,7 @@ function SessionCard({ tracks }: { tracks: Track[] }) {
           <ShieldCheck className="w-3.5 h-3.5" />
           All tracks one-stop cleared
         </span>
-        <Link href="/#catalog" className="inline-flex items-center gap-1 text-zinc-400 hover:text-white transition-colors">
+        <Link href="/#catalog" className="inline-flex items-center gap-1 text-slate-400 hover:text-white transition-colors">
           Full catalog <ArrowUpRight className="w-3.5 h-3.5" />
         </Link>
       </div>
@@ -135,27 +136,29 @@ export function HeroSection({ tracks }: { tracks: Track[] }) {
       {/* ─── Backdrop: slow crossfade + Ken Burns ─── */}
       <div className="absolute inset-0" aria-hidden>
         {SLIDES.map((s, i) => (
-          <img
+          <CoverImage
+            fill
             key={s.src}
             src={s.src}
             alt=""
+            priority={i === 0}
             className={cn(
-              'absolute inset-0 w-full h-full object-cover grayscale contrast-[1.15] brightness-[0.58] transition-opacity duration-[2000ms] ease-out',
+              'object-cover grayscale contrast-[1.15] brightness-[0.58] transition-opacity duration-[2000ms] ease-out',
               i === slide ? 'opacity-100 motion-safe:animate-kenburns' : 'opacity-0',
             )}
           />
         ))}
-        <div className="absolute inset-0 bg-gradient-to-r from-obsidian-950 via-obsidian-950/70 to-obsidian-950/20" />
-        <div className="absolute inset-0 bg-gradient-to-t from-obsidian-950 via-transparent to-obsidian-950/60" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_75%_30%,rgba(220,38,38,0.14),transparent_55%)]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-navy-950 via-navy-950/70 to-navy-950/20" />
+        <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-transparent to-navy-950/60" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_75%_30%,rgba(10,100,240,0.14),transparent_55%)]" />
       </div>
 
       <Container className="relative flex-1 flex flex-col pt-28 lg:pt-32 pb-8">
         <div className="flex-1 grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-14 lg:gap-16 items-center">
           {/* ─── Copy ─── */}
           <div>
-            <div className="enter-up flex items-center gap-3 text-[11px] font-mono uppercase tracking-[0.2em] text-zinc-400">
-              <span className="w-6 h-px bg-crimson-500" />
+            <div className="enter-up flex items-center gap-3 text-[11px] font-mono uppercase tracking-[0.2em] text-slate-400">
+              <span className="w-6 h-px bg-brand-500" />
               Direct sync catalog
             </div>
 
@@ -164,13 +167,13 @@ export function HeroSection({ tracks }: { tracks: Track[] }) {
               <span className="line-mask"><span style={{ '--line-delay': '80ms' } as React.CSSProperties}>Commercial</span></span>
               <span className="line-mask">
                 <span style={{ '--line-delay': '200ms' } as React.CSSProperties}>
-                  music, <span className="text-obsidian-300">cleared</span>
+                  music, <span className="text-navy-300">cleared</span>
                 </span>
               </span>
-              <span className="line-mask"><span className="text-obsidian-300" style={{ '--line-delay': '320ms' } as React.CSSProperties}>for every cut.</span></span>
+              <span className="line-mask"><span className="text-navy-300" style={{ '--line-delay': '320ms' } as React.CSSProperties}>for every cut.</span></span>
             </h1>
 
-            <p className="enter-up mt-8 max-w-lg text-base sm:text-lg text-zinc-300 leading-relaxed" style={{ '--enter-delay': '450ms' } as React.CSSProperties}>
+            <p className="enter-up mt-8 max-w-lg text-base sm:text-lg text-slate-300 leading-relaxed" style={{ '--enter-delay': '450ms' } as React.CSSProperties}>
               Pre-cleared master recordings with isolated stems, broadcast cutdowns and cue-sheet metadata —
               licensed per track, with no subscription.
             </p>
@@ -197,7 +200,7 @@ export function HeroSection({ tracks }: { tracks: Track[] }) {
               <div key={s.label}>
                 <dt className="sr-only">{s.label}</dt>
                 <dd className="text-2xl font-mono font-medium tabular-nums text-white">{s.value}</dd>
-                <dd className="text-xs text-zinc-500 mt-1">{s.label}</dd>
+                <dd className="text-xs text-slate-500 mt-1">{s.label}</dd>
               </div>
             ))}
           </dl>

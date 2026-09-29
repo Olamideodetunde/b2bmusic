@@ -12,37 +12,38 @@ import { Container, Reveal, SectionHeading, ArrowLink } from '@/components/home/
 import { CatalogExplorer } from '@/components/hub/CatalogExplorer';
 import { formatPrice, getSiteUrl } from '@/lib/utils';
 import { LICENSE_TIERS, tierPriceCents, type LicenseTierKey } from '@/lib/licensing';
+import { BRAND } from '@/lib/brand';
 
 export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = getSiteUrl();
   return {
-    title: 'B2B Production Music | Commercial Music Licensing for Video, Ads & Film',
+    title: `${BRAND.name} | Commercial Music Licensing for Video, Ads & Film`,
     description: 'Direct synchronization and commercial music licensing library. 100% pre-cleared master recordings with 24-bit WAV, isolated stems, broadcast cutdowns, and YouTube Content ID whitelist.',
     alternates: {
       canonical: siteUrl,
     },
     openGraph: {
-      title: 'B2B Production Music | Commercial Sync Licensing Library',
+      title: `${BRAND.name} | Commercial Sync Licensing Library`,
       description: '100% pre-cleared commercial music licensing with stems, cutdowns, and YouTube Content ID protection. Perpetual licenses from $10.',
       url: siteUrl,
-      siteName: 'B2B Production Music',
+      siteName: BRAND.name,
       type: 'website',
       images: [
         {
-          url: `${siteUrl}/banners/banner-spark-energy.jpg`,
+          url: `${siteUrl}/brand/og-default.jpg`,
           width: 1200,
           height: 630,
-          alt: 'B2B Production Music Catalog',
+          alt: `${BRAND.name} catalog`,
         },
       ],
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'B2B Production Music | Commercial Music Licensing',
+      title: `${BRAND.name} | Commercial Music Licensing`,
       description: '100% pre-cleared commercial music licensing with stems, cutdowns, and YouTube Content ID protection.',
-      images: [`${siteUrl}/banners/banner-spark-energy.jpg`],
+      images: [`${siteUrl}/brand/og-default.jpg`],
     },
   };
 }
@@ -54,13 +55,13 @@ export default async function HomePage() {
   const organizationSchema = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'B2B Production Music',
+    name: BRAND.name,
     url: siteUrl,
-    logo: `${siteUrl}/banners/banner-spark-energy.jpg`,
+    logo: `${siteUrl}${BRAND.logoPath}`,
     description: 'Commercial production music catalog and direct sync licensing provider for media, film, broadcast, and digital agencies.',
     contactPoint: {
       '@type': 'ContactPoint',
-      email: 'licensing@b2bproductionmusic.com',
+      email: BRAND.contactEmail,
       contactType: 'customer support',
     },
   };
@@ -68,7 +69,7 @@ export default async function HomePage() {
   const websiteSchema = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: 'B2B Production Music',
+    name: BRAND.name,
     url: siteUrl,
     potentialAction: {
       '@type': 'SearchAction',
@@ -85,7 +86,7 @@ export default async function HomePage() {
   const toolkitTrack = tracks.find(t => t.stems.length > 0 && t.altMixes.length > 0 && t.syncMeta);
 
   return (
-    <div className="bg-obsidian-950 text-white">
+    <div className="bg-navy-950 text-white">
       {/* Search Engine Structured Data */}
       <script
         type="application/ld+json"
@@ -106,12 +107,12 @@ export default async function HomePage() {
         <Container>
           <SectionHeading
             eyebrow="The catalog"
-            title={<>Audition. Filter. <span className="text-obsidian-300">License.</span></>}
+            title={<>Audition. Filter. <span className="text-navy-300">License.</span></>}
             description={`${tracks.length} master recordings and ${stemCount} isolated stems — filter by tempo, key, mood and vocal, then scrub any waveform to audition.`}
             aside={<ArrowLink href="/pricing">Licenses from $10</ArrowLink>}
           />
           <Reveal>
-            <div className="border border-white/[0.08] bg-obsidian-950">
+            <div className="border border-white/[0.08] bg-navy-950">
               <CatalogExplorer initialTracks={tracks} />
             </div>
           </Reveal>

@@ -2,7 +2,7 @@
   "name": "b2b-production-music-frontend",
   "version": "1.0.0",
   "private": true,
-  "description": "B2BProductionMusic.com — programmatic landing pages: Google Sheet → Make.com → API → Neon → Next.js ISR.",
+  "description": "B2BProductionMusic.com \u2014 programmatic landing pages: Google Sheet \u2192 Make.com \u2192 API \u2192 Neon \u2192 Next.js ISR.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -12,7 +12,8 @@
     "test": "tsx --test \"tests/**/*.test.ts\"",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed.ts",
-    "import:sheet": "tsx scripts/import-sheet.ts"
+    "import:sheet": "tsx scripts/import-sheet.ts",
+    "db:restore": "tsx scripts/restore-backup.ts"
   },
   "dependencies": {
     "clsx": "^2.1.1",

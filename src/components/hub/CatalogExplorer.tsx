@@ -134,22 +134,22 @@ function CatalogExplorerInner({ initialTracks }: CatalogExplorerProps) {
   return (
     <div>
       {/* ─── Sync discovery toolbar (sticks to the top of the scroll area) ─── */}
-      <div className="md:sticky md:top-16 z-20 relative bg-obsidian-950/95 backdrop-blur-md border-b border-white/[0.06] px-4 sm:px-6 py-2.5 space-y-2">
+      <div className="md:sticky md:top-16 z-20 relative bg-navy-950/95 backdrop-blur-md border-b border-white/[0.06] px-4 sm:px-6 py-2.5 space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           {/* Search within results */}
           <div className="relative w-full sm:w-44 2xl:w-64">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => updateQuery(e.target.value)}
               placeholder="Filter results…"
-              className="w-full h-7 bg-white/[0.03] border border-white/[0.08] rounded-md pl-8 pr-7 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-crimson-500/70"
+              className="w-full h-7 bg-white/[0.03] border border-white/[0.08] rounded-md pl-8 pr-7 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500/70"
             />
             {searchQuery && (
               <button
                 onClick={() => updateQuery('')}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 inline-flex items-center justify-center text-zinc-500 hover:text-white"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 inline-flex items-center justify-center text-slate-500 hover:text-white"
                 aria-label="Clear search"
               >
                 <X className="w-3 h-3" />
@@ -173,17 +173,17 @@ function CatalogExplorerInner({ initialTracks }: CatalogExplorerProps) {
           >
             <CamelotWheel selected={keys} available={availableKeys} onToggle={(code) => setKeys(p => toggleIn(p, code))} />
             <div className="flex items-center justify-between gap-3 mt-2 pt-2 border-t border-white/[0.06]">
-              <label className="inline-flex items-center gap-1.5 text-[11px] text-zinc-300 cursor-pointer">
+              <label className="inline-flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={harmonicMatch}
                   onChange={(e) => setHarmonicMatch(e.target.checked)}
-                  className="accent-crimson-600"
+                  className="accent-brand-600"
                 />
                 Include harmonic neighbours
               </label>
               {keys.length > 0 && (
-                <button onClick={() => setKeys([])} className="text-[11px] text-zinc-500 hover:text-white">Clear</button>
+                <button onClick={() => setKeys([])} className="text-[11px] text-slate-500 hover:text-white">Clear</button>
               )}
             </div>
           </FilterPopover>
@@ -191,10 +191,10 @@ function CatalogExplorerInner({ initialTracks }: CatalogExplorerProps) {
           <FilterPopover label="BPM" value={bpmActive ? `${bpmRange[0]}–${bpmRange[1]}` : undefined} active={bpmActive} panelClassName="p-3 w-64">
             <div className="flex items-center justify-between mb-3">
               <span className="label-xs">Tempo Range</span>
-              <span className="text-xs font-mono tabular-nums text-zinc-200">{bpmRange[0]}–{bpmRange[1]}</span>
+              <span className="text-xs font-mono tabular-nums text-slate-200">{bpmRange[0]}–{bpmRange[1]}</span>
             </div>
             <DualRange min={BPM_MIN} max={BPM_MAX} value={bpmRange} onChange={setBpmRange} />
-            <div className="flex justify-between text-[10px] font-mono text-zinc-600 mt-1">
+            <div className="flex justify-between text-[10px] font-mono text-slate-600 mt-1">
               <span>{BPM_MIN}</span>
               <span>{BPM_MAX}</span>
             </div>
@@ -207,7 +207,7 @@ function CatalogExplorerInner({ initialTracks }: CatalogExplorerProps) {
                     onClick={() => setBpmRange(on ? [BPM_MIN, BPM_MAX] : p.range)}
                     className={cn(
                       'h-6 rounded-sm text-[10px] font-mono border transition-colors',
-                      on ? 'bg-crimson-600 border-crimson-500 text-white' : 'border-white/[0.08] text-zinc-400 hover:text-white hover:border-white/20',
+                      on ? 'bg-brand-600 border-brand-500 text-white' : 'border-white/[0.08] text-slate-400 hover:text-white hover:border-white/20',
                     )}
                   >
                     {p.label}
@@ -241,12 +241,12 @@ function CatalogExplorerInner({ initialTracks }: CatalogExplorerProps) {
             onClick={() => setStemsOnly(s => !s)}
             className={cn(
               'inline-flex items-center gap-1.5 h-7 px-2 rounded-md border text-xs transition-colors',
-              stemsOnly ? 'border-crimson-500/50 bg-crimson-600/10 text-crimson-200' : 'border-white/[0.08] text-zinc-300 hover:border-white/20',
+              stemsOnly ? 'border-brand-500/50 bg-brand-600/10 text-brand-200' : 'border-white/[0.08] text-slate-300 hover:border-white/20',
             )}
           >
             <Layers className="w-3.5 h-3.5" />
             Stems
-            <span className={cn('relative w-6 h-3.5 rounded-full transition-colors', stemsOnly ? 'bg-crimson-600' : 'bg-obsidian-600')}>
+            <span className={cn('relative w-6 h-3.5 rounded-full transition-colors', stemsOnly ? 'bg-brand-600' : 'bg-navy-600')}>
               <span className={cn('absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white transition-all', stemsOnly ? 'left-3' : 'left-0.5')} />
             </span>
           </button>
@@ -256,17 +256,17 @@ function CatalogExplorerInner({ initialTracks }: CatalogExplorerProps) {
             {chips.length > 0 && (
               <button
                 onClick={resetFilters}
-                className="inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-xs text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors"
+                className="inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-xs text-slate-400 hover:text-white hover:bg-white/[0.04] transition-colors"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
                 Clear
-                <span className="min-w-[18px] h-[18px] px-1 inline-flex items-center justify-center rounded-full bg-crimson-600 text-white text-[10px] font-mono tabular-nums">
+                <span className="min-w-[18px] h-[18px] px-1 inline-flex items-center justify-center rounded-full bg-brand-600 text-white text-[10px] font-mono tabular-nums">
                   {chips.length}
                 </span>
               </button>
             )}
-            <span className="text-xs font-mono tabular-nums text-zinc-500 whitespace-nowrap">
-              <span className="text-zinc-200">{filteredTracks.length}</span> / {initialTracks.length}
+            <span className="text-xs font-mono tabular-nums text-slate-500 whitespace-nowrap">
+              <span className="text-slate-200">{filteredTracks.length}</span> / {initialTracks.length}
             </span>
           </div>
         </div>
@@ -278,11 +278,11 @@ function CatalogExplorerInner({ initialTracks }: CatalogExplorerProps) {
               <button
                 key={chip.id}
                 onClick={chip.clear}
-                className="group inline-flex items-center gap-1 h-5 pl-1.5 pr-1 rounded-sm bg-white/[0.04] border border-white/[0.08] text-[11px] text-zinc-300 hover:border-crimson-500/50 hover:text-white"
+                className="group inline-flex items-center gap-1 h-5 pl-1.5 pr-1 rounded-sm bg-white/[0.04] border border-white/[0.08] text-[11px] text-slate-300 hover:border-brand-500/50 hover:text-white"
                 aria-label={`Remove filter ${chip.label}`}
               >
                 {chip.label}
-                <X className="w-2.5 h-2.5 text-zinc-500 group-hover:text-crimson-400" />
+                <X className="w-2.5 h-2.5 text-slate-500 group-hover:text-brand-400" />
               </button>
             ))}
           </div>
@@ -294,11 +294,11 @@ function CatalogExplorerInner({ initialTracks }: CatalogExplorerProps) {
         <TrackTable tracks={filteredTracks} className="border-t-0" />
       ) : (
         <div className="px-6 py-16 text-center border-b border-white/[0.06]">
-          <p className="text-sm font-medium text-zinc-200">No tracks match these filters</p>
-          <p className="text-xs text-zinc-500 mt-1">Widen the BPM range, drop a key, or clear the search term.</p>
+          <p className="text-sm font-medium text-slate-200">No tracks match these filters</p>
+          <p className="text-xs text-slate-500 mt-1">Widen the BPM range, drop a key, or clear the search term.</p>
           <button
             onClick={resetFilters}
-            className="mt-4 h-7 px-3 rounded-md border border-white/10 text-xs text-zinc-300 hover:text-white hover:border-white/20"
+            className="mt-4 h-7 px-3 rounded-md border border-white/10 text-xs text-slate-300 hover:text-white hover:border-white/20"
           >
             Clear all filters
           </button>

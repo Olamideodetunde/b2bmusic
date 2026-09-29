@@ -12,7 +12,10 @@ import { TrackTable } from '@/components/hub/TrackTable';
 import Link from 'next/link';
 import { ChevronRight, ArrowUpRight } from 'lucide-react';
 import { Container, Eyebrow } from '@/components/home/primitives';
-import { formatDuration, getSiteUrl, parseMusicalKey, toSlug } from '@/lib/utils';
+import { formatDuration, getSiteUrl, parseMusicalKey, toSlug, excerpt, titleCase, absoluteUrl, isIndexable } from '@/lib/utils';
+import { BRAND } from '@/lib/brand';
+import { CoverImage } from '@/components/ui/CoverImage';
+import { fitTitle } from '@/lib/seo/hubs';
 
 interface PageProps {
   params: { slug: string };
@@ -32,12 +35,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!track) return { title: 'Track Not Found' };
 
-  const title = `${track.title} | ${track.targetKeyword || track.title} (Commercial Sync License)`;
-  const description = `${(track.description || '').slice(0, 155)}... 100% pre-cleared sync license with master WAV and stems.`;
+  // Keyword-led title; fitTitle drops the " | <brand>" suffix when it would push past ~65 chars.
+  const keyword = (track.targetKeyword || '').trim();
+  const pageTitle = keyword && keyword.toLowerCase() !== track.title.toLowerCase()
+    ? `${track.title} – ${titleCase(keyword)}`
+    : `${track.title} – Commercial Sync License`;
+  const title = fitTitle(pageTitle);
+  const suffix = ' Pre-cleared sync license with WAV master & stems.';
+  const description = `${excerpt(track.description, 158 - suffix.length)}${suffix}`;
 
-  const coverUrl = track.coverImageUrl
-    ? (track.coverImageUrl.startsWith('http') ? track.coverImageUrl : `${siteUrl}${track.coverImageUrl.startsWith('/') ? '' : '/'}${track.coverImageUrl}`)
-    : `${siteUrl}/images/default-track-og.jpg`;
+  const coverUrl = track.coverImageUrl ? absoluteUrl(track.coverImageUrl, siteUrl) : `${siteUrl}${BRAND.ogImagePath}`;
 
   const keywords = [
     track.targetKeyword,
@@ -56,27 +63,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     keywords,
     alternates: { canonical: `${siteUrl}/tracks/${track.slug}` },
     robots: {
-      index: true,
-      follow: true,
+      index: isIndexable(),
+      follow: isIndexable(),
       googleBot: {
-        index: true,
-        follow: true,
+        index: isIndexable(),
+        follow: isIndexable(),
         'max-video-preview': -1,
         'max-image-preview': 'large',
         'max-snippet': -1,
       },
     },
     openGraph: {
-      title,
+      title: pageTitle,
       description,
       url: `${siteUrl}/tracks/${track.slug}`,
-      siteName: 'B2B Production Music',
+      siteName: BRAND.name,
       type: 'music.song',
       images: [{ url: coverUrl, width: 1200, height: 630, alt: track.title }],
     },
     twitter: {
       card: 'summary_large_image',
-      title,
+      title: pageTitle,
       description,
       images: [coverUrl],
     },
@@ -107,7 +114,7 @@ export default async function TrackLandingPage({ params }: PageProps) {
     ...(track.stems && track.stems.length > 0 ? [{ value: String(track.stems.length), label: 'Stems' }] : []),
   ];
 
-  const card = 'rounded-2xl border border-white/[0.08] bg-obsidian-900/30';
+  const card = 'rounded-2xl border border-white/[0.08] bg-navy-900/30';
 
   return (
     <div>
@@ -118,33 +125,35 @@ export default async function TrackLandingPage({ params }: PageProps) {
         {/* Ambient backdrop from the track's own artwork */}
         {track.coverImageUrl && (
           <div className="absolute inset-0" aria-hidden>
-            <img src={track.coverImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover scale-125 blur-3xl opacity-30 saturate-[0.8]" />
-            <div className="absolute inset-0 bg-gradient-to-b from-obsidian-950/40 via-obsidian-950/70 to-obsidian-950" />
+            {/* Blurred to 3xl anyway, so a small, low-quality variant is plenty */}
+            <CoverImage fill src={track.coverImageUrl} alt="" sizes="256px" quality={40} className="object-cover scale-125 blur-3xl opacity-30 saturate-[0.8]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-navy-950/40 via-navy-950/70 to-navy-950" />
           </div>
         )}
 
         <Container className="relative pt-10 pb-12 lg:pt-14 lg:pb-14">
-          <nav aria-label="Breadcrumb" className="enter-up flex items-center gap-1.5 text-[11px] font-mono text-zinc-500 mb-10">
+          <nav aria-label="Breadcrumb" className="enter-up flex items-center gap-1.5 text-[11px] font-mono text-slate-500 mb-10">
             <Link href="/" className="hover:text-white transition-colors">Home</Link>
-            <ChevronRight className="w-3 h-3 text-obsidian-500" />
+            <ChevronRight className="w-3 h-3 text-navy-500" />
+            <Link href="/genres" className="hover:text-white transition-colors">Genres</Link>
+            <ChevronRight className="w-3 h-3 text-navy-500" />
             <Link href={genreHref} className="hover:text-white transition-colors">{track.genre}</Link>
-            <ChevronRight className="w-3 h-3 text-obsidian-500" />
-            <span className="text-zinc-300 truncate max-w-xs">{track.title}</span>
+            <ChevronRight className="w-3 h-3 text-navy-500" />
+            <span className="text-slate-300 truncate max-w-xs">{track.title}</span>
           </nav>
 
           <div className="flex flex-col sm:flex-row gap-8 lg:gap-10 sm:items-end">
             {track.coverImageUrl ? (
-              <img
+              <CoverImage
+                priority
                 src={track.coverImageUrl}
                 alt={`${track.title} cover artwork`}
-                width={208}
-                height={208}
-                decoding="async"
+                size={208}
                 className="enter-up w-40 h-40 lg:w-52 lg:h-52 rounded-xl object-cover border border-white/10 shadow-2xl shadow-black/60 shrink-0"
               />
             ) : (
-              <div className="w-40 h-40 lg:w-52 lg:h-52 rounded-xl bg-obsidian-900 border border-white/10 flex items-center justify-center shrink-0">
-                <span className="font-mono text-xs font-bold text-crimson-500">WAV</span>
+              <div className="w-40 h-40 lg:w-52 lg:h-52 rounded-xl bg-navy-900 border border-white/10 flex items-center justify-center shrink-0">
+                <span className="font-mono text-xs font-bold text-brand-500">WAV</span>
               </div>
             )}
 
@@ -159,8 +168,8 @@ export default async function TrackLandingPage({ params }: PageProps) {
                 {track.title}
               </h1>
               {track.syncMeta?.composer && (
-                <p className="enter-up mt-3 text-base text-zinc-400" style={{ '--enter-delay': '140ms' } as React.CSSProperties}>
-                  by <span className="text-zinc-200">{track.syncMeta.composer}</span>
+                <p className="enter-up mt-3 text-base text-slate-400" style={{ '--enter-delay': '140ms' } as React.CSSProperties}>
+                  by <span className="text-slate-200">{track.syncMeta.composer}</span>
                 </p>
               )}
               <div className="enter-up" style={{ '--enter-delay': '200ms' } as React.CSSProperties}>
@@ -184,7 +193,7 @@ export default async function TrackLandingPage({ params }: PageProps) {
               const content = (
                 <>
                   <span className="block text-2xl font-mono font-medium tabular-nums text-white">{s.value}</span>
-                  <span className="block text-xs text-zinc-500 mt-1 group-hover:text-crimson-400 transition-colors">{s.label}{s.href && ' →'}</span>
+                  <span className="block text-xs text-slate-500 mt-1 group-hover:text-brand-400 transition-colors">{s.label}{s.href && ' →'}</span>
                 </>
               );
               return (
@@ -236,10 +245,10 @@ export default async function TrackLandingPage({ params }: PageProps) {
                 </h2>
               </div>
               <div className="flex items-center gap-5">
-                <Link href={genreHref} className="group inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-white transition-colors">
+                <Link href={genreHref} className="group inline-flex items-center gap-1 text-sm text-slate-400 hover:text-white transition-colors">
                   {track.genre} <ArrowUpRight className="w-4 h-4 transition-transform group-hover:rotate-45" />
                 </Link>
-                <Link href={`/bpm/${band.slug}`} className="group inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-white transition-colors">
+                <Link href={`/bpm/${band.slug}`} className="group inline-flex items-center gap-1 text-sm text-slate-400 hover:text-white transition-colors">
                   {band.label} <ArrowUpRight className="w-4 h-4 transition-transform group-hover:rotate-45" />
                 </Link>
               </div>

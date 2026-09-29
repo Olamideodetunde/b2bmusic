@@ -41,7 +41,7 @@ export const initialTracks: Track[] = [
     ],
     syncMeta: {
       composer: "Julian Hayes",
-      publisher: "B2B Production Music Sync (BMI)",
+      publisher: "Global B2B Audio Publishing (BMI)",
       proAffiliation: "BMI (100% Direct Pre-Cleared)",
       isrc: "US-B2B-26-00101",
       energyLevel: "Medium",
@@ -88,7 +88,7 @@ export const initialTracks: Track[] = [
     ],
     syncMeta: {
       composer: "Marcus Sterling",
-      publisher: "B2B Production Music Sync (ASCAP)",
+      publisher: "Global B2B Audio Publishing (ASCAP)",
       proAffiliation: "ASCAP (100% Direct Pre-Cleared)",
       isrc: "US-B2B-26-00102",
       energyLevel: "High",
@@ -134,7 +134,7 @@ export const initialTracks: Track[] = [
     ],
     syncMeta: {
       composer: "Silas Vance",
-      publisher: "B2B Production Music Sync (BMI)",
+      publisher: "Global B2B Audio Publishing (BMI)",
       proAffiliation: "BMI (100% Direct Pre-Cleared)",
       isrc: "US-B2B-26-00103",
       energyLevel: "Medium",
@@ -180,7 +180,7 @@ export const initialTracks: Track[] = [
     ],
     syncMeta: {
       composer: "Elena Rostova",
-      publisher: "B2B Production Music Sync (BMI)",
+      publisher: "Global B2B Audio Publishing (BMI)",
       proAffiliation: "BMI / PRS (100% Direct Pre-Cleared)",
       isrc: "US-B2B-26-00104",
       energyLevel: "Explosive",
@@ -224,7 +224,7 @@ export const initialTracks: Track[] = [
     ],
     syncMeta: {
       composer: "David Karr",
-      publisher: "B2B Production Music Sync (ASCAP)",
+      publisher: "Global B2B Audio Publishing (ASCAP)",
       proAffiliation: "ASCAP (100% Direct Pre-Cleared)",
       isrc: "US-B2B-26-00105",
       energyLevel: "Subtle",
@@ -269,7 +269,7 @@ export const initialTracks: Track[] = [
     ],
     syncMeta: {
       composer: "Clara Lindqvist",
-      publisher: "B2B Production Music Sync (BMI)",
+      publisher: "Global B2B Audio Publishing (BMI)",
       proAffiliation: "STIM / BMI (100% Direct Pre-Cleared)",
       isrc: "US-B2B-26-00106",
       energyLevel: "Subtle",

@@ -2,7 +2,8 @@ import { MetadataRoute } from 'next';
 import { getAllTracks } from '@/lib/db';
 import type { Track } from '@/lib/db/types';
 import { BPM_BANDS } from '@/lib/catalog/taxonomy';
-import { getSiteUrl, toSlug } from '@/lib/utils';
+import { getSiteUrl, isIndexable, toSlug } from '@/lib/utils';
+import { isHubIndexable } from '@/lib/seo/hubs';
 
 // Rendered per request so a newly published track is in the sitemap immediately.
 // (Next 14 doesn't invalidate metadata routes via revalidatePath('/sitemap.xml') —
@@ -21,6 +22,8 @@ function groupBy(tracks: Track[], keys: (t: Track) => string[]) {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = getSiteUrl();
+  // Staging: robots.txt disallows everything, so publish an empty sitemap too.
+  if (!isIndexable()) return [];
   const tracks = await getAllTracks();
   if (tracks.length === 0) return [{ url: siteUrl, changeFrequency: 'daily', priority: 1 }];
 
@@ -29,6 +32,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const core: MetadataRoute.Sitemap = [
     { url: siteUrl, lastModified: catalogUpdated, changeFrequency: 'daily', priority: 1.0 },
     { url: `${siteUrl}/pricing`, lastModified: catalogUpdated, changeFrequency: 'monthly', priority: 0.6 },
+    ...['/genres', '/use-cases', '/bpm'].map(path => ({
+      url: `${siteUrl}${path}`,
+      lastModified: catalogUpdated,
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    })),
   ];
 
   const trackPages: MetadataRoute.Sitemap = tracks.map(track => ({
@@ -45,10 +54,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   });
 
-  const genreHubs = Array.from(groupBy(tracks, t => [toSlug(t.genre)])).map(([slug, g]) => hub(`/genres/${slug}`, g));
-  const useCaseHubs = Array.from(groupBy(tracks, t => t.useCases.map(toSlug))).map(([slug, g]) => hub(`/use-cases/${slug}`, g));
+  // Thin hubs (below MIN_INDEXABLE_HUB_TRACKS) are noindex, so they stay out of the sitemap.
+  const genreHubs = Array.from(groupBy(tracks, t => [toSlug(t.genre)]))
+    .filter(([, g]) => isHubIndexable(g.length))
+    .map(([slug, g]) => hub(`/genres/${slug}`, g));
+  const useCaseHubs = Array.from(groupBy(tracks, t => t.useCases.map(toSlug)))
+    .filter(([, g]) => isHubIndexable(g.length))
+    .map(([slug, g]) => hub(`/use-cases/${slug}`, g));
   const bpmHubs = BPM_BANDS.map(b => [b, tracks.filter(t => t.bpm >= b.min && t.bpm <= b.max)] as const)
-    .filter(([, g]) => g.length > 0)
+    .filter(([, g]) => isHubIndexable(g.length))
     .map(([b, g]) => hub(`/bpm/${b.slug}`, g));
 
   return [...core, ...trackPages, ...genreHubs, ...useCaseHubs, ...bpmHubs];

@@ -5,9 +5,12 @@ import { CatalogExplorer } from '@/components/hub/CatalogExplorer';
 import { PageHeader } from '@/components/navigation/PageHeader';
 import { GenreTiles } from '@/components/hub/GenreTiles';
 import { Container } from '@/components/home/primitives';
+import { JsonLd } from '@/components/seo/JsonLd';
 import { useCaseImage } from '@/lib/imagery';
-
 import { catalogStats, getSiteUrl, toSlug } from '@/lib/utils';
+import { BRAND } from '@/lib/brand';
+import { breadcrumbSchema, collectionSchema, fitTitle, hubMetaDescription, hubRobots, hubSummary, type Crumb } from '@/lib/seo/hubs';
+import type { Track } from '@/lib/db/types';
 
 interface UseCasePageProps {
   params: { useCase: string };
@@ -18,99 +21,65 @@ export const revalidate = 3600;
 export async function generateStaticParams() {
   const tracks = await getAllTracks();
   const cases = new Set<string>();
-  tracks.forEach(t => {
-    t.useCases.forEach(u => cases.add(toSlug(u)));
-  });
+  tracks.forEach(t => t.useCases.forEach(u => cases.add(toSlug(u))));
   return Array.from(cases).map(useCase => ({ useCase }));
 }
 
+/** Prefer the exact label from the data ("SaaS Product Reveal") over a title-cased slug. */
+function useCaseLabel(tracks: Track[], slug: string): string {
+  return (
+    tracks.flatMap(t => t.useCases).find(u => toSlug(u) === slug) ??
+    slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  );
+}
+
 export async function generateMetadata({ params }: UseCasePageProps): Promise<Metadata> {
+  const tracks = await getTracksByUseCase(params.useCase);
+  if (tracks.length === 0) return { title: 'Not found' };
   const siteUrl = getSiteUrl();
-  const useCaseTitle =
-    (await getTracksByUseCase(params.useCase)).flatMap(t => t.useCases).find(u => toSlug(u) === params.useCase) ??
-    params.useCase.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  const useCaseUrl = `${siteUrl}/use-cases/${params.useCase}`;
+  const name = useCaseLabel(tracks, params.useCase);
+  const url = `${siteUrl}/use-cases/${params.useCase}`;
+  const title = `Music for ${name}`;
+  const description = hubMetaDescription(`Production music for ${name}.`, tracks, { omit: 'useCases' });
+  const image = `${siteUrl}${useCaseImage(params.useCase)}`;
 
   return {
-    title: `Best Music for ${useCaseTitle} | Commercial Sync Catalog`,
-    description: `Curated royalty-free commercial production music for ${useCaseTitle}. High impact, voiceover-friendly audio cleared for commercial broadcast and YouTube.`,
-    alternates: {
-      canonical: useCaseUrl,
-    },
-    openGraph: {
-      title: `Commercial Music for ${useCaseTitle} | B2B Production Music`,
-      description: `Curated production tracks engineered for ${useCaseTitle}. Pre-cleared worldwide sync licenses with stems.`,
-      url: useCaseUrl,
-      siteName: 'B2B Production Music',
-      type: 'website',
-      images: [
-        {
-          url: `${siteUrl}/banners/banner-dj-producer.jpg`,
-          width: 1200,
-          height: 630,
-          alt: `Music for ${useCaseTitle}`,
-        },
-      ],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: `Commercial Music for ${useCaseTitle} | B2B Production Music`,
-      description: `Curated production tracks engineered for ${useCaseTitle}. Pre-cleared worldwide sync licenses with stems.`,
-      images: [`${siteUrl}/banners/banner-dj-producer.jpg`],
-    },
+    title: fitTitle(title),
+    description,
+    alternates: { canonical: url },
+    robots: hubRobots(tracks.length),
+    openGraph: { title, description, url, siteName: BRAND.name, type: 'website', images: [{ url: image, alt: `Music for ${name}` }] },
+    twitter: { card: 'summary_large_image', title, description, images: [image] },
   };
 }
 
 export default async function UseCaseHubPage({ params }: UseCasePageProps) {
   const tracks = await getTracksByUseCase(params.useCase);
-  const useCaseTitle = params.useCase.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  const siteUrl = getSiteUrl();
-
   if (tracks.length === 0) notFound();
 
-  const itemListSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name: `Production Music for ${useCaseTitle}`,
-    description: `Curated commercial sync music engineered for ${useCaseTitle}.`,
-    url: `${siteUrl}/use-cases/${params.useCase}`,
-    mainEntity: {
-      '@type': 'ItemList',
-      numberOfItems: tracks.length,
-      itemListElement: tracks.map((track, index) => ({
-        '@type': 'ListItem',
-        position: index + 1,
-        name: track.title,
-        url: `${siteUrl}/tracks/${track.slug}`,
-      })),
-    },
-  };
-
+  const siteUrl = getSiteUrl();
+  const url = `${siteUrl}/use-cases/${params.useCase}`;
+  const name = useCaseLabel(tracks, params.useCase);
+  const summary = hubSummary(tracks, { omit: 'useCases' });
+  const crumbs: Crumb[] = [{ href: '/', label: 'Home' }, { href: '/use-cases', label: 'Use cases' }, { label: name }];
   const allTracks = await getAllTracks();
-  // Prefer the exact label from the data ("SaaS Product Reveal") over the slug title-case.
-  const useCaseName =
-    tracks.flatMap(t => t.useCases).find(u => toSlug(u) === params.useCase) ?? useCaseTitle;
 
   return (
     <div>
-      {/* Schema.org Collection List */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
-      />
+      <JsonLd data={[collectionSchema(siteUrl, url, `Production music for ${name}`, summary, tracks), breadcrumbSchema(siteUrl, crumbs, url)]} />
 
       <PageHeader
-        crumbs={[{ href: '/', label: 'Home' }, { href: '/#catalog', label: 'Catalog' }, { label: useCaseName }]}
+        crumbs={crumbs}
         eyebrow="Use case"
-        title={<>Music for <span className="text-obsidian-300">{useCaseName}</span></>}
-        description="Engineered to sit under voiceover, follow product pacing and carry a narrative arc — without frequency masking or clutter."
+        title={<>Music for <span className="text-navy-300">{name}</span></>}
+        description={`${summary} Each one sits under voiceover and follows picture, with stems for the mix.`}
         image={useCaseImage(params.useCase)}
         stats={catalogStats(tracks)}
       />
 
       <section className="py-12 lg:py-16">
         <Container>
-          <div className="border border-white/[0.08] bg-obsidian-950">
+          <div className="border border-white/[0.08] bg-navy-950">
             <CatalogExplorer initialTracks={tracks} />
           </div>
         </Container>

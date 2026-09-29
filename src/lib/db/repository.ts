@@ -38,6 +38,8 @@ export interface TrackRepository {
 
   /** Idempotent on stripeSessionId — returns false if the order already existed. */
   createOrder(order: Omit<Order, 'id' | 'createdAt' | 'status'>): Promise<boolean>;
+  /** Marks a paid order refunded. Returns false if there is no such order or it was already refunded. */
+  markOrderRefunded(stripeSessionId: string): Promise<boolean>;
 }
 
 export class SlugConflictError extends Error {

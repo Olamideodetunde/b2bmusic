@@ -74,10 +74,10 @@ export function CamelotWheel({ selected, available, onToggle }: CamelotWheelProp
                 d={segmentPath(inner, outer, mid - 15, mid + 15)}
                 className={
                   isSelected
-                    ? 'fill-crimson-600 stroke-obsidian-950'
+                    ? 'fill-brand-600 stroke-navy-950'
                     : inCatalog
-                      ? 'fill-obsidian-700 stroke-obsidian-950 group-hover/seg:fill-obsidian-600'
-                      : 'fill-obsidian-850 stroke-obsidian-950 group-hover/seg:fill-obsidian-800'
+                      ? 'fill-navy-700 stroke-navy-950 group-hover/seg:fill-navy-600'
+                      : 'fill-navy-850 stroke-navy-950 group-hover/seg:fill-navy-800'
                 }
                 strokeWidth={1.5}
               />
@@ -86,7 +86,7 @@ export function CamelotWheel({ selected, available, onToggle }: CamelotWheelProp
                 y={ly - 3}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                className={isSelected ? 'fill-white' : inCatalog ? 'fill-zinc-200' : 'fill-obsidian-400'}
+                className={isSelected ? 'fill-white' : inCatalog ? 'fill-slate-200' : 'fill-navy-400'}
                 style={{ fontSize: 9, fontFamily: 'var(--font-jetbrains), monospace', fontWeight: 600 }}
               >
                 {code}
@@ -96,7 +96,7 @@ export function CamelotWheel({ selected, available, onToggle }: CamelotWheelProp
                 y={ly + 7}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                className={isSelected ? 'fill-crimson-100' : 'fill-obsidian-400'}
+                className={isSelected ? 'fill-brand-100' : 'fill-navy-400'}
                 style={{ fontSize: 7, fontFamily: 'var(--font-jetbrains), monospace' }}
               >
                 {camelotName(code)}
@@ -105,11 +105,11 @@ export function CamelotWheel({ selected, available, onToggle }: CamelotWheelProp
           );
         }),
       )}
-      <circle cx={C} cy={C} r={RINGS.A.inner - 2} className="fill-obsidian-950" />
-      <text x={C} y={C - 5} textAnchor="middle" className="fill-obsidian-400" style={{ fontSize: 8, fontFamily: 'var(--font-jetbrains), monospace' }}>
+      <circle cx={C} cy={C} r={RINGS.A.inner - 2} className="fill-navy-950" />
+      <text x={C} y={C - 5} textAnchor="middle" className="fill-navy-400" style={{ fontSize: 8, fontFamily: 'var(--font-jetbrains), monospace' }}>
         B MAJ
       </text>
-      <text x={C} y={C + 7} textAnchor="middle" className="fill-obsidian-400" style={{ fontSize: 8, fontFamily: 'var(--font-jetbrains), monospace' }}>
+      <text x={C} y={C + 7} textAnchor="middle" className="fill-navy-400" style={{ fontSize: 8, fontFamily: 'var(--font-jetbrains), monospace' }}>
         A MIN
       </text>
     </svg>

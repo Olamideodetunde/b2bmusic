@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Syne, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, JetBrains_Mono, Montserrat } from "next/font/google";
 import "./globals.css";
 import { AudioProvider } from "@/components/audio/GlobalAudioContext";
 import { Navbar } from "@/components/navigation/Navbar";
@@ -8,14 +8,15 @@ import { MiniPlayerBar } from "@/components/audio/MiniPlayerBar";
 import { WorkspaceProvider } from "@/components/workspace/WorkspaceContext";
 import { StemsDrawer } from "@/components/workspace/StemsDrawer";
 import { getAllTracks } from "@/lib/db";
-import { getSiteUrl, toSlug } from "@/lib/utils";
+import { getSiteUrl, toSlug, isIndexable } from "@/lib/utils";
 import { BPM_BANDS } from "@/lib/catalog/taxonomy";
+import { BRAND } from '@/lib/brand';
 
-// ── Display / Headers: Syne ──────────────────────────────
-const syne = Syne({
+// ── Brand + headings: Montserrat (the logo typeface) ────
+const montserrat = Montserrat({
   subsets: ["latin"],
-  weight: ["700", "800"],
-  variable: "--font-syne",
+  weight: ["500", "600", "700", "800", "900"],
+  variable: "--font-brand",
   display: "swap",
 });
 
@@ -38,8 +39,8 @@ const jetbrains = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: {
-    default: "B2B Production Music | Commercial Music Licensing for Video & Media",
-    template: "%s | B2B Production Music",
+    default: `${BRAND.name} | Commercial Music Licensing for Video & Media`,
+    template: `%s | ${BRAND.name}`,
   },
   description: "Direct synchronization and commercial music licensing for tech companies, video agencies, podcasts, and commercial broadcasts. 100% pre-cleared master WAVs & isolated stems.",
   keywords: [
@@ -55,35 +56,35 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Alvan Esiaka" }],
   robots: {
-    index: true,
-    follow: true,
+    index: isIndexable(),
+    follow: isIndexable(),
     googleBot: {
-      index: true,
-      follow: true,
+      index: isIndexable(),
+      follow: isIndexable(),
       'max-video-preview': -1,
       'max-image-preview': 'large',
       'max-snippet': -1,
     },
   },
   openGraph: {
-    title: "B2B Production Music | Commercial Music Licensing",
+    title: `${BRAND.name} | Commercial Music Licensing`,
     description: "High-quality, commercially cleared production music with direct sync licenses and YouTube Content ID protection. Perpetual licenses from $10.",
-    siteName: "B2B Production Music",
+    siteName: BRAND.name,
     type: "website",
     images: [
       {
-        url: "/banners/banner-spark-energy.jpg",
+        url: "/brand/og-default.jpg",
         width: 1200,
         height: 630,
-        alt: "B2B Production Music Catalog",
+        alt: `${BRAND.name} catalog`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "B2B Production Music | Commercial Music Licensing",
+    title: `${BRAND.name} | Commercial Music Licensing`,
     description: "High-quality, commercially cleared production music with direct sync licenses and YouTube Content ID protection.",
-    images: ["/banners/banner-spark-energy.jpg"],
+    images: ["/brand/og-default.jpg"],
   },
 };
 
@@ -108,7 +109,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${syne.variable} ${jakarta.variable} ${jetbrains.variable}`}
+      className={`dark ${jakarta.variable} ${jetbrains.variable} ${montserrat.variable}`}
       suppressHydrationWarning
     >
       <head>
@@ -116,7 +117,7 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
       </head>
       {/* pb-[72px] reserves room for the fixed audio dock */}
-      <body className="min-h-screen bg-obsidian-950 text-zinc-100 flex flex-col antialiased pb-[72px] font-jakarta selection:bg-crimson-600/30 selection:text-white">
+      <body className="min-h-screen bg-navy-950 text-slate-100 flex flex-col antialiased pb-[72px] font-jakarta selection:bg-brand-600/30 selection:text-white">
         <AudioProvider>
           <WorkspaceProvider>
             <Navbar genres={genres} />

@@ -2,10 +2,11 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "frontend-dev",
+      "name": "dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "frontend-bundle", "run", "dev"],
-      "port": 3000
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000,
+      "autoPort": true
     }
   ]
 }

@@ -21,6 +21,7 @@ import { useAudio } from '@/components/audio/GlobalAudioContext';
 import { Waveform } from '@/components/audio/Waveform';
 import { useWorkspace } from '@/components/workspace/WorkspaceContext';
 import { cn, formatDuration, parseMusicalKey, rightsLabel, toSlug } from '@/lib/utils';
+import { CoverImage } from '@/components/ui/CoverImage';
 
 /*
  * Column template, shared by header and rows. Cells are hidden progressively:
@@ -87,9 +88,9 @@ export function TrackTable({ tracks, showHeader = true, className }: TrackTableP
       <button
         onClick={() => cycleSort(k)}
         className={cn(
-          'inline-flex items-center gap-0.5 label-xs hover:text-zinc-200 transition-colors',
+          'inline-flex items-center gap-0.5 label-xs hover:text-slate-200 transition-colors',
           align === 'right' && 'justify-end',
-          active && 'text-zinc-200',
+          active && 'text-slate-200',
           cls,
         )}
         aria-label={`Sort by ${k}`}
@@ -103,7 +104,7 @@ export function TrackTable({ tracks, showHeader = true, className }: TrackTableP
   return (
     <div className={cn('border-y border-white/[0.06]', className)} role="table" aria-label="Tracks">
       {showHeader && (
-        <div className={cn(GRID, 'h-8 px-3 border-b border-white/[0.06] bg-obsidian-950')} role="row">
+        <div className={cn(GRID, 'h-8 px-3 border-b border-white/[0.06] bg-navy-950')} role="row">
           <span className="label-xs text-right">#</span>
           <span />
           <SortHeader k="title">Title</SortHeader>
@@ -130,7 +131,7 @@ interface TrackRowProps {
 }
 
 const actionBtn =
-  'inline-flex items-center justify-center w-6 h-6 rounded text-zinc-500 hover:text-white hover:bg-white/[0.06] transition-colors';
+  'inline-flex items-center justify-center w-6 h-6 rounded text-slate-500 hover:text-white hover:bg-white/[0.06] transition-colors';
 
 export function TrackRow({ track, index, queue }: TrackRowProps) {
   const { currentTrack, isPlaying, playTrack, togglePlay, seek, currentTime, duration, setQueue } = useAudio();
@@ -170,8 +171,8 @@ export function TrackRow({ track, index, queue }: TrackRowProps) {
         GRID,
         'group relative px-3 py-2.5 border-b border-white/[0.04] last:border-b-0 transition-colors',
         isCurrent
-          ? 'bg-crimson-600/[0.07] shadow-[inset_2px_0_0_#DC2626]'
-          : 'hover:bg-obsidian-900/60',
+          ? 'bg-brand-600/[0.07] shadow-[inset_2px_0_0_#0a64f0]'
+          : 'hover:bg-navy-900/60',
       )}
     >
       {/* # / play */}
@@ -182,7 +183,7 @@ export function TrackRow({ track, index, queue }: TrackRowProps) {
       >
         <span
           className={cn(
-            'text-[11px] font-mono tabular-nums text-zinc-500 group-hover:opacity-0',
+            'text-[11px] font-mono tabular-nums text-slate-500 group-hover:opacity-0',
             isCurrent && 'opacity-0',
           )}
         >
@@ -192,8 +193,8 @@ export function TrackRow({ track, index, queue }: TrackRowProps) {
           className={cn(
             'absolute inset-0 inline-flex items-center justify-center rounded-full transition-colors',
             isCurrent
-              ? 'bg-crimson-600 text-white'
-              : 'opacity-0 group-hover:opacity-100 bg-white/[0.08] text-white hover:bg-crimson-600',
+              ? 'bg-brand-600 text-white'
+              : 'opacity-0 group-hover:opacity-100 bg-white/[0.08] text-white hover:bg-brand-600',
           )}
         >
           {isCurrentlyPlaying ? <Pause className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current ml-px" />}
@@ -202,14 +203,14 @@ export function TrackRow({ track, index, queue }: TrackRowProps) {
 
       {/* Art */}
       {track.coverImageUrl ? (
-        <img
+        <CoverImage
           src={track.coverImageUrl}
           alt=""
-          loading="lazy"
+          size={36}
           className="w-9 h-9 rounded object-cover border border-white/[0.08]"
         />
       ) : (
-        <div className="w-9 h-9 rounded bg-obsidian-800 border border-white/[0.08]" />
+        <div className="w-9 h-9 rounded bg-navy-800 border border-white/[0.08]" />
       )}
 
       {/* Title / artist / genre */}
@@ -218,15 +219,15 @@ export function TrackRow({ track, index, queue }: TrackRowProps) {
           href={`/tracks/${track.slug}`}
           className={cn(
             'block text-[13px] font-semibold tracking-tight truncate transition-colors',
-            isCurrent ? 'text-crimson-300' : 'text-white hover:text-crimson-400',
+            isCurrent ? 'text-brand-300' : 'text-white hover:text-brand-400',
           )}
         >
           {track.title}
         </Link>
-        <div className="flex items-center gap-1.5 text-xs text-zinc-500 truncate mt-px">
-          <span className="truncate text-zinc-400">{track.syncMeta?.composer || 'B2B Music Sync'}</span>
-          <span className="text-obsidian-500">·</span>
-          <Link href={`/genres/${toSlug(track.genre)}`} className="truncate hover:text-crimson-400 transition-colors">
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 truncate mt-px">
+          <span className="truncate text-slate-400">{track.syncMeta?.composer || 'B2B Music Sync'}</span>
+          <span className="text-navy-500">·</span>
+          <Link href={`/genres/${toSlug(track.genre)}`} className="truncate hover:text-brand-400 transition-colors">
             {track.genre}
           </Link>
         </div>
@@ -244,16 +245,16 @@ export function TrackRow({ track, index, queue }: TrackRowProps) {
       />
 
       {/* BPM */}
-      <span className="hidden md:block text-xs font-mono tabular-nums text-zinc-300">{track.bpm}</span>
+      <span className="hidden md:block text-xs font-mono tabular-nums text-slate-300">{track.bpm}</span>
 
       {/* Key */}
       <span className="hidden md:block text-xs font-mono tabular-nums whitespace-nowrap" title={track.musicalKey}>
-        <span className="text-zinc-300">{key.camelot ?? '—'}</span>
-        <span className="text-zinc-500"> / {key.short}</span>
+        <span className="text-slate-300">{key.camelot ?? '—'}</span>
+        <span className="text-slate-500"> / {key.short}</span>
       </span>
 
       {/* Duration */}
-      <span className="text-xs font-mono tabular-nums text-zinc-400">{formatDuration(track.durationSeconds)}</span>
+      <span className="text-xs font-mono tabular-nums text-slate-400">{formatDuration(track.durationSeconds)}</span>
 
       {/* Mood + instrument tags */}
       <div className="hidden xl:flex items-center gap-1 min-w-0 overflow-hidden">
@@ -263,8 +264,8 @@ export function TrackRow({ track, index, queue }: TrackRowProps) {
             className={cn(
               'shrink-0 max-w-[110px] truncate inline-flex items-center h-5 px-1.5 rounded-sm text-[10px] border',
               i < 2
-                ? 'bg-white/[0.04] border-white/[0.06] text-zinc-400'
-                : 'bg-transparent border-white/[0.06] text-zinc-500 font-mono',
+                ? 'bg-white/[0.04] border-white/[0.06] text-slate-400'
+                : 'bg-transparent border-white/[0.06] text-slate-500 font-mono',
             )}
             title={tag}
           >
@@ -272,7 +273,7 @@ export function TrackRow({ track, index, queue }: TrackRowProps) {
           </span>
         ))}
         {hiddenTagCount > 0 && (
-          <span className="shrink-0 text-[10px] font-mono text-zinc-600">+{hiddenTagCount}</span>
+          <span className="shrink-0 text-[10px] font-mono text-slate-600">+{hiddenTagCount}</span>
         )}
       </div>
 
@@ -295,7 +296,7 @@ export function TrackRow({ track, index, queue }: TrackRowProps) {
         </a>
         <button
           onClick={() => toggleProject(track.id)}
-          className={cn(actionBtn, saved && 'text-crimson-400 hover:text-crimson-300')}
+          className={cn(actionBtn, saved && 'text-brand-400 hover:text-brand-300')}
           title={saved ? 'Remove from project' : 'Add to project'}
           aria-pressed={saved}
         >
@@ -344,7 +345,7 @@ function RowMenu({ track }: { track: Track }) {
     setTimeout(() => { setCopied(false); setOpen(false); }, 900);
   };
 
-  const item = 'flex items-center gap-2 w-full h-7 px-2.5 text-xs text-zinc-300 hover:bg-white/[0.06] hover:text-white text-left';
+  const item = 'flex items-center gap-2 w-full h-7 px-2.5 text-xs text-slate-300 hover:bg-white/[0.06] hover:text-white text-left';
 
   return (
     <div className="relative" ref={ref}>
@@ -358,25 +359,25 @@ function RowMenu({ track }: { track: Track }) {
         <MoreHorizontal className="w-3.5 h-3.5" />
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 top-full mt-1 z-30 w-48 py-1 rounded-md bg-obsidian-850 border border-white/10 shadow-xl shadow-black/60">
+        <div role="menu" className="absolute right-0 top-full mt-1 z-30 w-48 py-1 rounded-md bg-navy-850 border border-white/10 shadow-xl shadow-black/60">
           <Link href={`/tracks/${track.slug}`} className={item} role="menuitem">
-            <ExternalLink className="w-3.5 h-3.5 text-zinc-500" /> Track details &amp; license
+            <ExternalLink className="w-3.5 h-3.5 text-slate-500" /> Track details &amp; license
           </Link>
           {(track.stems.length > 0 || track.altMixes.length > 0) && (
             <button onClick={() => { openStems(track); setOpen(false); }} className={item} role="menuitem">
-              <Layers className="w-3.5 h-3.5 text-zinc-500" /> Stems &amp; alt-mixes
+              <Layers className="w-3.5 h-3.5 text-slate-500" /> Stems &amp; alt-mixes
             </button>
           )}
           {track.syncMeta?.isrc && (
             <button onClick={copyIsrc} className={item} role="menuitem">
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-zinc-500" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
               <span>Copy ISRC</span>
-              <span className="ml-auto font-mono text-[10px] text-zinc-500">{track.syncMeta.isrc.slice(-5)}</span>
+              <span className="ml-auto font-mono text-[10px] text-slate-500">{track.syncMeta.isrc.slice(-5)}</span>
             </button>
           )}
           <div className="my-1 border-t border-white/[0.06]" />
           <Link href={`/genres/${toSlug(track.genre)}`} className={item} role="menuitem">
-            <FolderOpen className="w-3.5 h-3.5 text-zinc-500" /> More {track.genre}
+            <FolderOpen className="w-3.5 h-3.5 text-slate-500" /> More {track.genre}
           </Link>
         </div>
       )}

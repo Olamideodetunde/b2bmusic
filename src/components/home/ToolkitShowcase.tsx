@@ -45,12 +45,12 @@ function StemsPanel({ track }: { track: Track }) {
           const audible = solo ? solo === lane : !muted.includes(lane);
           return (
             <div key={lane} className="grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-4 h-12 px-3 rounded-lg bg-white/[0.02] border border-white/[0.05]">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">{lane}</span>
+              <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">{lane}</span>
               <div className={cn('flex items-center gap-[2px] h-7 transition-opacity duration-500', audible ? 'opacity-100' : 'opacity-20')}>
                 {bars[li].map((h, i) => (
                   <span
                     key={i}
-                    className={cn('flex-1 rounded-[1px]', li === 0 ? 'bg-crimson-500' : 'bg-zinc-400/70', audible && 'bar-playing')}
+                    className={cn('flex-1 rounded-[1px]', li === 0 ? 'bg-brand-500' : 'bg-slate-400/70', audible && 'bar-playing')}
                     style={{ height: `${h}%`, transformOrigin: 'center', animationDelay: `${(i % 9) * 70 + li * 40}ms` }}
                   />
                 ))}
@@ -59,14 +59,14 @@ function StemsPanel({ track }: { track: Track }) {
                 <button
                   onClick={() => setMuted(m => (m.includes(lane) ? m.filter(x => x !== lane) : [...m, lane]))}
                   aria-pressed={muted.includes(lane)}
-                  className={cn('w-6 h-6 rounded text-[10px] font-mono border transition-colors', muted.includes(lane) ? 'bg-zinc-200 text-obsidian-950 border-zinc-200' : 'border-white/10 text-zinc-500 hover:text-white')}
+                  className={cn('w-6 h-6 rounded text-[10px] font-mono border transition-colors', muted.includes(lane) ? 'bg-slate-200 text-navy-950 border-slate-200' : 'border-white/10 text-slate-500 hover:text-white')}
                 >
                   M
                 </button>
                 <button
                   onClick={() => setSolo(s => (s === lane ? null : lane))}
                   aria-pressed={solo === lane}
-                  className={cn('w-6 h-6 rounded text-[10px] font-mono border transition-colors', solo === lane ? 'bg-crimson-600 text-white border-crimson-600' : 'border-white/10 text-zinc-500 hover:text-white')}
+                  className={cn('w-6 h-6 rounded text-[10px] font-mono border transition-colors', solo === lane ? 'bg-brand-600 text-white border-brand-600' : 'border-white/10 text-slate-500 hover:text-white')}
                 >
                   S
                 </button>
@@ -87,10 +87,10 @@ function MixesPanel({ track, active }: { track: Track; active: boolean }) {
       <ul className="space-y-1">
         {track.altMixes.map((mix, i) => (
           <li key={mix.id} className="grid grid-cols-[minmax(0,160px)_minmax(0,1fr)_44px] items-center gap-4 h-11 px-3 rounded-lg hover:bg-white/[0.03]">
-            <span className="text-sm text-zinc-200 truncate">{mix.name}</span>
+            <span className="text-sm text-slate-200 truncate">{mix.name}</span>
             <span className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
               <span
-                className={cn('block h-full rounded-full origin-left transition-transform duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]', i === 0 ? 'bg-crimson-500' : 'bg-zinc-400/70')}
+                className={cn('block h-full rounded-full origin-left transition-transform duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]', i === 0 ? 'bg-brand-500' : 'bg-slate-400/70')}
                 style={{
                   width: `${(mix.durationSeconds / max) * 100}%`,
                   transform: active ? 'scaleX(1)' : 'scaleX(0)',
@@ -98,7 +98,7 @@ function MixesPanel({ track, active }: { track: Track; active: boolean }) {
                 }}
               />
             </span>
-            <span className="text-xs font-mono tabular-nums text-zinc-400 text-right">{formatDuration(mix.durationSeconds)}</span>
+            <span className="text-xs font-mono tabular-nums text-slate-400 text-right">{formatDuration(mix.durationSeconds)}</span>
           </li>
         ))}
       </ul>
@@ -132,7 +132,7 @@ function CuePanel({ track }: { track: Track }) {
         {rows.map(([k, v]) => (
           <div key={k} className="grid grid-cols-[110px_minmax(0,1fr)] gap-4 px-4 py-2.5">
             <dt className="label-xs self-center">{k}</dt>
-            <dd className="text-sm font-mono text-zinc-200 truncate">{v}</dd>
+            <dd className="text-sm font-mono text-slate-200 truncate">{v}</dd>
           </div>
         ))}
       </dl>
@@ -141,7 +141,7 @@ function CuePanel({ track }: { track: Track }) {
           <ShieldCheck className="w-3.5 h-3.5" />
           {rightsLabel(meta.proAffiliation)}
         </span>
-        <button onClick={copy} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-white/10 text-xs text-zinc-300 hover:text-white hover:border-white/30 transition-colors">
+        <button onClick={copy} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-white/10 text-xs text-slate-300 hover:text-white hover:border-white/30 transition-colors">
           {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
           {copied ? 'Copied' : 'Copy cue sheet'}
         </button>
@@ -154,7 +154,7 @@ function PanelHeader({ title, meta }: { title: string; meta: string }) {
   return (
     <div className="flex items-center justify-between mb-5">
       <span className="text-sm font-semibold tracking-tight text-white">{title}</span>
-      <span className="text-[11px] font-mono text-zinc-500">{meta}</span>
+      <span className="text-[11px] font-mono text-slate-500">{meta}</span>
     </div>
   );
 }
@@ -179,7 +179,7 @@ export function ToolkitShowcase({ track }: { track: Track }) {
           <Reveal>
             <Eyebrow>The toolkit</Eyebrow>
             <h2 className="mt-5 text-4xl sm:text-5xl font-bold tracking-tight leading-[1.04]">
-              Every track ships as a toolkit, <span className="text-obsidian-300">not a file.</span>
+              Every track ships as a toolkit, <span className="text-navy-300">not a file.</span>
             </h2>
 
             <div className="mt-12 border-t border-white/[0.08]" role="tablist" aria-label="Deliverables">
@@ -194,15 +194,15 @@ export function ToolkitShowcase({ track }: { track: Track }) {
                     className="relative block w-full text-left py-5 border-b border-white/[0.08]"
                   >
                     <div className="flex items-baseline gap-5">
-                      <span className={cn('text-xs font-mono tabular-nums transition-colors', isActive ? 'text-crimson-400' : 'text-zinc-600')}>
+                      <span className={cn('text-xs font-mono tabular-nums transition-colors', isActive ? 'text-brand-400' : 'text-slate-600')}>
                         0{i + 1}
                       </span>
                       <div className="flex-1">
-                        <span className={cn('text-xl font-semibold tracking-tight transition-colors duration-300', isActive ? 'text-white' : 'text-zinc-500 hover:text-zinc-300')}>
+                        <span className={cn('text-xl font-semibold tracking-tight transition-colors duration-300', isActive ? 'text-white' : 'text-slate-500 hover:text-slate-300')}>
                           {tab.title}
                         </span>
                         <div className={cn('grid transition-[grid-template-rows,opacity] duration-500 ease-out', isActive ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0')}>
-                          <p className="overflow-hidden text-sm text-zinc-400 leading-relaxed max-w-md">
+                          <p className="overflow-hidden text-sm text-slate-400 leading-relaxed max-w-md">
                             <span className="block pt-2">{tab.body}</span>
                           </p>
                         </div>
@@ -213,7 +213,7 @@ export function ToolkitShowcase({ track }: { track: Track }) {
                       <span
                         key={active}
                         onAnimationEnd={advance}
-                        className="absolute left-0 -bottom-px h-px w-full bg-crimson-500 origin-left motion-safe:animate-progress"
+                        className="absolute left-0 -bottom-px h-px w-full bg-brand-500 origin-left motion-safe:animate-progress"
                         style={{ animationDuration: '6s', animationPlayState: paused ? 'paused' : 'running' }}
                       />
                     )}
@@ -224,7 +224,7 @@ export function ToolkitShowcase({ track }: { track: Track }) {
           </Reveal>
 
           <Reveal delay={150}>
-            <div className="relative rounded-2xl border border-white/[0.08] bg-obsidian-900/40 p-5 sm:p-7 min-h-[430px] shadow-2xl shadow-black/40">
+            <div className="relative rounded-2xl border border-white/[0.08] bg-navy-900/40 p-5 sm:p-7 min-h-[430px] shadow-2xl shadow-black/40">
               {TABS.map(tab => (
                 <div
                   key={tab.key}

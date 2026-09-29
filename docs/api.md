@@ -1,6 +1,6 @@
 # API reference
 
-Base URL: `https://b2bproductionmusic.com` (or the staging URL).
+Base URL: `https://globalb2baudioholding.com` (or the staging URL).
 
 ## Authentication
 
@@ -46,7 +46,7 @@ This is the endpoint the Make.com scenario calls. Send one row as JSON. Keys can
   "action": "created",
   "trackId": 7,
   "slug": "futuristic-solar-automotive-commercial-soundtrack",
-  "liveUrl": "https://b2bproductionmusic.com/tracks/futuristic-solar-automotive-commercial-soundtrack",
+  "liveUrl": "https://globalb2baudioholding.com/tracks/futuristic-solar-automotive-commercial-soundtrack",
   "warnings": [],
   "revalidated": ["/", "/pricing", "/tracks/futuristic-solar-automotive-commercial-soundtrack", "/genres/electronic", "/bpm/125-plus-bpm", "/use-cases/automotive-commercials", "…"]
 }
@@ -121,7 +121,7 @@ Returns `503` if the database is unreachable.
 ## Example (curl)
 
 ```bash
-curl -X POST https://b2bproductionmusic.com/api/tracks \
+curl -X POST https://globalb2baudioholding.com/api/tracks \
   -H "Authorization: Bearer $INGESTION_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -135,3 +135,19 @@ curl -X POST https://b2bproductionmusic.com/api/tracks \
     "Status": "Ready"
   }'
 ```
+
+## Deprecated aliases
+
+These URLs are kept only so that older integrations keep working. They behave exactly like the endpoint in the second column. New set-ups should use the canonical URL.
+
+| Alias | Canonical endpoint | Used by |
+|---|---|---|
+| `POST /api/track-pages` | `POST /api/tracks` | early Make.com scenarios |
+| `POST /api/tracks/ingest` | `POST /api/tracks` | early Make.com scenarios |
+| `POST /api/webhooks/stripe` | `POST /api/stripe/webhook` | a Stripe endpoint created before the rename |
+
+Before deleting an alias, check that nothing still calls it:
+
+- Make.com: HTTP module → URL.
+- Stripe: Developers → Webhooks → endpoint URL.
+- `GET /api/publish-log`: shows recent calls.

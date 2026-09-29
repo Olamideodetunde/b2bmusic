@@ -61,7 +61,7 @@ Map each field from module [1]. For example, `Title` ← `1. Title`.
 | Timeout | `40` seconds |
 | Evaluate all states as errors | **No** (422/409 responses carry the error message the router needs) |
 
-**Error handler** (right-click the module → *Add error handler*): add **Break**, with *Automatically complete execution* = Yes, *Number of attempts* = 3 and *Interval* = 5 minutes. This retries network failures and 5xx responses. Retries are safe: a create that already succeeded is matched by title + keyword and updated, never duplicated.
+**Error handler** (right-click the module → *Add error handler*): add **Break**, with *Automatically complete execution* = Yes, *Number of attempts* = 3 and *Interval* = 5 minutes. This retries network failures and timeouts. Because *Evaluate all states as errors* is **No**, an HTTP 5xx response is *not* an error to Make: it goes down Route B and the row gets Status = Error, so set it back to Ready once the site is healthy. Retries are safe: a create that already succeeded is matched by title + keyword and updated, never duplicated.
 
 ## [4] Router
 

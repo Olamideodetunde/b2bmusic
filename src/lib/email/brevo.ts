@@ -6,6 +6,9 @@
  * Without BREVO_API_KEY, emails are logged instead of sent (local development).
  */
 
+import { BRAND } from '@/lib/brand';
+import { getSiteUrl } from '@/lib/utils';
+
 interface SendEmailParams {
   to: { email: string; name?: string }[];
   subject: string;
@@ -26,8 +29,8 @@ export function escapeHtml(value: unknown): string {
 
 export async function sendTransactionalEmail({ to, subject, htmlContent }: SendEmailParams): Promise<SendResult> {
   const apiKey = process.env.BREVO_API_KEY;
-  const senderEmail = process.env.BREVO_SENDER_EMAIL || 'licensing@b2bproductionmusic.com';
-  const senderName = process.env.BREVO_SENDER_NAME || 'B2B Production Music';
+  const senderEmail = process.env.BREVO_SENDER_EMAIL || BRAND.contactEmail;
+  const senderName = process.env.BREVO_SENDER_NAME || BRAND.name;
 
   if (!apiKey) {
     console.log(`[brevo:mock] to=${to.map(t => t.email).join(',')} subject="${subject}"`);
@@ -56,21 +59,33 @@ export async function sendTransactionalEmail({ to, subject, htmlContent }: SendE
 
 // ─── Templates ──────────────────────────────────────────────────────
 
+// Light layout: the logo is designed on white, and light emails render reliably
+// across Gmail/Outlook dark-mode inversion. Colors are the logo's navy / blue / gold.
+const C = { ink: BRAND.colors.navy, muted: '#5b6b86', line: '#e3e9f3', link: BRAND.colors.blue, gold: BRAND.colors.gold };
+
 function layout(heading: string, body: string) {
+  const logo = `${getSiteUrl()}${BRAND.logoPath}`;
   return `
-  <div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;padding:28px;background:#0b0b0f;color:#f8fafc;border:1px solid #1e1e2b;border-radius:12px">
-    <div style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#71718a;margin-bottom:18px">B2B Production Music</div>
-    <h2 style="margin:0 0 16px;font-size:20px;color:#ffffff">${heading}</h2>
-    ${body}
-    <div style="margin-top:28px;padding-top:14px;border-top:1px solid #1e1e2b;font-size:12px;color:#71718a">
-      B2BProductionMusic.com · Direct sync licensing
+  <div style="background:#f4f7fb;padding:24px 12px">
+  <div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;color:${C.ink};border:1px solid ${C.line};border-radius:12px;overflow:hidden">
+    <div style="height:4px;background:linear-gradient(90deg,${C.ink},${C.link} 60%,${C.gold})"></div>
+    <div style="padding:24px 28px 0;text-align:center">
+      <img src="${logo}" alt="${BRAND.wordmark}" width="220" style="display:inline-block;width:220px;max-width:70%;height:auto;border:0" />
     </div>
+    <div style="padding:8px 28px 28px">
+      <h2 style="margin:16px 0 16px;font-size:20px;color:${C.ink}">${heading}</h2>
+      ${body}
+      <div style="margin-top:28px;padding-top:14px;border-top:1px solid ${C.line};font-size:12px;color:${C.muted}">
+        ${BRAND.wordmark} <span style="color:${C.gold}">&bull;</span> ${BRAND.tagline.replace(/•/g, `<span style="color:${C.gold}">&bull;</span>`)}
+      </div>
+    </div>
+  </div>
   </div>`;
 }
 
 function rows(items: [string, string][]) {
   return `<table style="width:100%;border-collapse:collapse;font-size:14px">${items
-    .map(([k, v]) => `<tr><td style="padding:9px 0;color:#a1a1ba;width:140px;border-bottom:1px solid #1e1e2b">${k}</td><td style="padding:9px 0;border-bottom:1px solid #1e1e2b;color:#ffffff">${v}</td></tr>`)
+    .map(([k, v]) => `<tr><td style="padding:9px 0;color:${C.muted};width:140px;border-bottom:1px solid ${C.line}">${k}</td><td style="padding:9px 0;border-bottom:1px solid ${C.line};color:${C.ink}">${v}</td></tr>`)
     .join('')}</table>`;
 }
 
@@ -84,7 +99,7 @@ export async function sendPublishAlertEmail(p: { title: string; slug: string; li
   const to = alertRecipient();
   if (!to) return { success: true, mocked: true } as SendResult;
   const warnings = p.warnings.length
-    ? `<p style="margin:16px 0 0;color:#fbbf24;font-size:13px"><strong>Check:</strong><br>${p.warnings.map(escapeHtml).join('<br>')}</p>`
+    ? `<p style="margin:16px 0 0;color:#9a6b12;font-size:13px"><strong>Check:</strong><br>${p.warnings.map(escapeHtml).join('<br>')}</p>`
     : '';
   return sendTransactionalEmail({
     to,
@@ -94,7 +109,7 @@ export async function sendPublishAlertEmail(p: { title: string; slug: string; li
       rows([
         ['Track', `<strong>${escapeHtml(p.title)}</strong>`],
         ['Track ID', escapeHtml(p.trackId)],
-        ['URL', `<a href="${escapeHtml(p.liveUrl)}" style="color:#f87171">${escapeHtml(p.liveUrl)}</a>`],
+        ['URL', `<a href="${escapeHtml(p.liveUrl)}" style="color:${C.link}">${escapeHtml(p.liveUrl)}</a>`],
       ]) + warnings,
     ),
   });
@@ -110,7 +125,7 @@ export async function sendPublishFailureEmail(p: { title: string; errorSummary: 
     htmlContent: layout(
       'A sheet row could not be published',
       rows([['Track', escapeHtml(p.title || '—')], ['Problem', escapeHtml(p.errorSummary)]]) +
-        '<p style="margin:16px 0 0;color:#a1a1ba;font-size:13px">Fix the row in the Google Sheet and set Status back to <strong>Ready</strong>.</p>',
+        `<p style="margin:16px 0 0;color:${C.muted};font-size:13px">Fix the row in the Google Sheet and set Status back to <strong>Ready</strong>.</p>`,
     ),
   });
 }
@@ -126,20 +141,20 @@ export async function sendPurchaseReceiptEmail(p: {
   orderRef: string;
 }) {
   const download = p.downloadUrl
-    ? `<a href="${escapeHtml(p.downloadUrl)}" style="display:inline-block;margin-top:20px;background:#dc2626;color:#ffffff;padding:12px 22px;text-decoration:none;border-radius:999px;font-weight:bold">Download licensed audio</a>`
-    : `<p style="margin:20px 0 0;color:#a1a1ba;font-size:13px">Your licensed files will follow in a separate email from our licensing team.</p>`;
+    ? `<a href="${escapeHtml(p.downloadUrl)}" style="display:inline-block;margin-top:20px;background:${C.link};color:#ffffff;padding:12px 22px;text-decoration:none;border-radius:999px;font-weight:bold">Download licensed audio</a>`
+    : `<p style="margin:20px 0 0;color:${C.muted};font-size:13px">Your licensed files will follow in a separate email from our licensing team.</p>`;
   return sendTransactionalEmail({
     to: [{ email: p.customerEmail }],
     subject: `Your license: ${p.trackTitle} (${p.tierName})`,
     htmlContent: layout(
       'License confirmed',
       rows([
-        ['Track', `<a href="${escapeHtml(p.trackUrl)}" style="color:#f87171">${escapeHtml(p.trackTitle)}</a>`],
+        ['Track', `<a href="${escapeHtml(p.trackUrl)}" style="color:${C.link}">${escapeHtml(p.trackTitle)}</a>`],
         ['License', escapeHtml(p.tierName)],
         ['Amount', escapeHtml(p.amount)],
         ['Order ref', `<code>${escapeHtml(p.orderRef)}</code>`],
       ]) +
-        '<p style="margin:16px 0 0;color:#a1a1ba;font-size:13px">Perpetual, worldwide synchronization license for one project, 100% pre-cleared (master and publishing), with YouTube Content ID whitelisting.</p>' +
+        `<p style="margin:16px 0 0;color:${C.muted};font-size:13px">Perpetual, worldwide synchronization license for one project, 100% pre-cleared (master and publishing), with YouTube Content ID whitelisting.</p>` +
         download,
     ),
   });

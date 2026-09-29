@@ -5,9 +5,11 @@ import { CatalogExplorer } from '@/components/hub/CatalogExplorer';
 import { PageHeader } from '@/components/navigation/PageHeader';
 import { GenreTiles } from '@/components/hub/GenreTiles';
 import { Container } from '@/components/home/primitives';
+import { JsonLd } from '@/components/seo/JsonLd';
 import { genreImage } from '@/lib/imagery';
-
 import { catalogStats, getSiteUrl, toSlug } from '@/lib/utils';
+import { BRAND } from '@/lib/brand';
+import { breadcrumbSchema, collectionSchema, fitTitle, hubMetaDescription, hubRobots, hubSummary, type Crumb } from '@/lib/seo/hubs';
 
 interface GenrePageProps {
   params: { genre: string };
@@ -22,90 +24,52 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: GenrePageProps): Promise<Metadata> {
+  const tracks = await getTracksByGenre(params.genre);
+  if (tracks.length === 0) return { title: 'Not found' };
   const siteUrl = getSiteUrl();
-  const genreTitle =
-    (await getTracksByGenre(params.genre))[0]?.genre ??
-    params.genre.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  const genreUrl = `${siteUrl}/genres/${params.genre}`;
+  const genre = tracks[0].genre;
+  const url = `${siteUrl}/genres/${params.genre}`;
+  const title = `${genre} Production Music`;
+  const description = hubMetaDescription(`License ${genre.toLowerCase()} production music.`, tracks, { omit: 'genre' });
+  const image = `${siteUrl}${genreImage(genre)}`;
 
   return {
-    title: `${genreTitle} Production Music | Commercial Licensing Library`,
-    description: `Explore and license royalty-free ${genreTitle} commercial background music. Direct sync licenses, instant download, and YouTube Content ID clearance.`,
-    alternates: {
-      canonical: genreUrl,
-    },
-    openGraph: {
-      title: `${genreTitle} Commercial Music | B2B Production Music`,
-      description: `Browse 100% pre-cleared ${genreTitle} tracks with isolated stems and broadcast cutdowns.`,
-      url: genreUrl,
-      siteName: 'B2B Production Music',
-      type: 'website',
-      images: [
-        {
-          url: `${siteUrl}/banners/banner-stage-lights.jpg`,
-          width: 1200,
-          height: 630,
-          alt: `${genreTitle} Music Catalog`,
-        },
-      ],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: `${genreTitle} Commercial Music | B2B Production Music`,
-      description: `Browse 100% pre-cleared ${genreTitle} tracks with isolated stems and broadcast cutdowns.`,
-      images: [`${siteUrl}/banners/banner-stage-lights.jpg`],
-    },
+    title: fitTitle(title),
+    description,
+    alternates: { canonical: url },
+    robots: hubRobots(tracks.length),
+    openGraph: { title, description, url, siteName: BRAND.name, type: 'website', images: [{ url: image, alt: `${genre} music catalog` }] },
+    twitter: { card: 'summary_large_image', title, description, images: [image] },
   };
 }
 
 export default async function GenreHubPage({ params }: GenrePageProps) {
   const tracks = await getTracksByGenre(params.genre);
-  const genreTitle = params.genre.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  const siteUrl = getSiteUrl();
-
   if (tracks.length === 0) notFound();
 
-  const itemListSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name: `${genreTitle} Production Music Catalog`,
-    description: `Curated collection of ${genreTitle} commercial production tracks.`,
-    url: `${siteUrl}/genres/${params.genre}`,
-    mainEntity: {
-      '@type': 'ItemList',
-      numberOfItems: tracks.length,
-      itemListElement: tracks.map((track, index) => ({
-        '@type': 'ListItem',
-        position: index + 1,
-        name: track.title,
-        url: `${siteUrl}/tracks/${track.slug}`,
-      })),
-    },
-  };
-
-  const allTracks = await getAllTracks();
+  const siteUrl = getSiteUrl();
+  const url = `${siteUrl}/genres/${params.genre}`;
   const genreName = tracks[0].genre;
+  const summary = hubSummary(tracks, { omit: 'genre' });
+  const crumbs: Crumb[] = [{ href: '/', label: 'Home' }, { href: '/genres', label: 'Genres' }, { label: genreName }];
+  const allTracks = await getAllTracks();
 
   return (
     <div>
-      {/* Schema.org Collection List */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
-      />
+      <JsonLd data={[collectionSchema(siteUrl, url, `${genreName} production music`, summary, tracks), breadcrumbSchema(siteUrl, crumbs, url)]} />
 
       <PageHeader
-        crumbs={[{ href: '/', label: 'Home' }, { href: '/#catalog', label: 'Catalog' }, { label: genreName }]}
+        crumbs={crumbs}
         eyebrow="Genre"
         title={genreName}
-        description={`Broadcast-quality ${genreName.toLowerCase()} tracks formatted for commercial campaigns, streaming video, brand films and presentations — every one pre-cleared with stems and cutdowns.`}
+        description={`${summary} Every track is pre-cleared, with stems and cutdowns.`}
         image={genreImage(genreName)}
         stats={catalogStats(tracks)}
       />
 
       <section className="py-12 lg:py-16">
         <Container>
-          <div className="border border-white/[0.08] bg-obsidian-950">
+          <div className="border border-white/[0.08] bg-navy-950">
             <CatalogExplorer initialTracks={tracks} />
           </div>
         </Container>

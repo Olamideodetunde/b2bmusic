@@ -10,11 +10,11 @@ export function Container({ children, className }: { children: React.ReactNode; 
   return <div className={cn('w-full max-w-[1400px] mx-auto px-5 sm:px-8 lg:px-12', className)}>{children}</div>;
 }
 
-/** Small mono section label with a crimson rule. */
+/** Small mono section label with a brand-blue rule. */
 export function Eyebrow({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('flex items-center gap-3 text-[11px] font-mono uppercase tracking-[0.2em] text-zinc-400', className)}>
-      <span className="w-6 h-px bg-crimson-500" />
+    <div className={cn('flex items-center gap-3 text-[11px] font-mono uppercase tracking-[0.2em] text-slate-400', className)}>
+      <span className="w-6 h-px bg-brand-500" />
       {children}
     </div>
   );
@@ -75,7 +75,7 @@ const btnBase =
 
 export function PrimaryButton({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) {
   return (
-    <Link href={href} className={cn(btnBase, 'bg-crimson-600 hover:bg-crimson-500 text-white', className)}>
+    <Link href={href} className={cn(btnBase, 'bg-brand-600 hover:bg-brand-500 text-white', className)}>
       {children}
       <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
     </Link>
@@ -86,7 +86,7 @@ export function GhostButton({ href, children, className }: { href: string; child
   return (
     <Link
       href={href}
-      className={cn(btnBase, 'border border-white/15 hover:border-white/40 text-zinc-100 hover:text-white bg-white/[0.02]', className)}
+      className={cn(btnBase, 'border border-white/15 hover:border-white/40 text-slate-100 hover:text-white bg-white/[0.02]', className)}
     >
       {children}
     </Link>
@@ -96,10 +96,10 @@ export function GhostButton({ href, children, className }: { href: string; child
 /** Text link with an underline that draws in on hover. */
 export function ArrowLink({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) {
   return (
-    <Link href={href} className={cn('group inline-flex items-center gap-1.5 text-sm text-zinc-300 hover:text-white transition-colors', className)}>
+    <Link href={href} className={cn('group inline-flex items-center gap-1.5 text-sm text-slate-300 hover:text-white transition-colors', className)}>
       <span className="relative">
         {children}
-        <span className="absolute left-0 -bottom-0.5 h-px w-full origin-left scale-x-0 bg-crimson-500 transition-transform duration-500 ease-out group-hover:scale-x-100" />
+        <span className="absolute left-0 -bottom-0.5 h-px w-full origin-left scale-x-0 bg-brand-500 transition-transform duration-500 ease-out group-hover:scale-x-100" />
       </span>
       <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
     </Link>
@@ -123,7 +123,7 @@ export function SectionHeading({
       <Reveal className="max-w-2xl">
         <Eyebrow>{eyebrow}</Eyebrow>
         <h2 className="mt-5 text-4xl sm:text-5xl font-bold tracking-tight leading-[1.04]">{title}</h2>
-        {description && <p className="mt-5 text-base text-zinc-400 leading-relaxed max-w-xl">{description}</p>}
+        {description && <p className="mt-5 text-base text-slate-400 leading-relaxed max-w-xl">{description}</p>}
       </Reveal>
       {aside && <Reveal delay={120} className="shrink-0">{aside}</Reveal>}
     </div>

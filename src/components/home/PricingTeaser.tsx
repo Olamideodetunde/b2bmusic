@@ -14,7 +14,7 @@ export function PricingTeaser({ fromPrices }: { fromPrices: Record<LicenseTierKe
       <Container>
         <SectionHeading
           eyebrow="Licensing"
-          title={<>One track. One fee. <span className="text-obsidian-300">Yours to keep.</span></>}
+          title={<>One track. One fee. <span className="text-navy-300">Yours to keep.</span></>}
           description="Per-track perpetual licenses. No subscription, no renewal dates, no usage audits."
           aside={<ArrowLink href="/pricing">Compare all rights</ArrowLink>}
         />
@@ -26,21 +26,21 @@ export function PricingTeaser({ fromPrices }: { fromPrices: Record<LicenseTierKe
                 href="/pricing"
                 className={cn(
                   'group relative flex flex-col h-full p-8 lg:p-10 transition-colors duration-500',
-                  tier.featured ? 'bg-crimson-600/[0.06] hover:bg-crimson-600/[0.1]' : 'hover:bg-white/[0.02]',
+                  tier.featured ? 'bg-brand-600/[0.06] hover:bg-brand-600/[0.1]' : 'hover:bg-white/[0.02]',
                 )}
               >
-                {tier.featured && <span className="absolute inset-x-0 top-0 h-px bg-crimson-500" />}
+                {tier.featured && <span className="absolute inset-x-0 top-0 h-px bg-brand-500" />}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-zinc-300">{tier.label}</span>
-                  {tier.featured && <span className="text-[10px] font-mono uppercase tracking-wider text-crimson-400">Most chosen</span>}
+                  <span className="text-sm font-medium text-slate-300">{tier.label}</span>
+                  {tier.featured && <span className="text-[10px] font-mono uppercase tracking-wider text-brand-400">Most chosen</span>}
                 </div>
                 <div className="mt-8 flex items-baseline gap-2">
-                  <span className="text-xs font-mono text-zinc-500">From</span>
+                  <span className="text-xs font-mono text-slate-500">From</span>
                   <span className="text-5xl font-mono font-medium tabular-nums tracking-tight text-white">{tier.price}</span>
-                  <span className="text-xs font-mono text-zinc-500">/ track</span>
+                  <span className="text-xs font-mono text-slate-500">/ track</span>
                 </div>
-                <p className="mt-4 text-sm text-zinc-400 leading-relaxed">{tier.body}</p>
-                <span className="mt-10 inline-flex items-center gap-1.5 text-sm text-zinc-300 group-hover:text-white transition-colors">
+                <p className="mt-4 text-sm text-slate-400 leading-relaxed">{tier.body}</p>
+                <span className="mt-10 inline-flex items-center gap-1.5 text-sm text-slate-300 group-hover:text-white transition-colors">
                   See what&apos;s included
                   <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>

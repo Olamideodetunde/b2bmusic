@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 /**
  * POST /api/stripe/webhook — Stripe → records the order and emails the license receipt.
  * Configure in Stripe → Developers → Webhooks with events:
- *   checkout.session.completed, checkout.session.async_payment_succeeded
+ *   checkout.session.completed, checkout.session.async_payment_succeeded, charge.refunded
  * Idempotent: Stripe retries are safe (orders are unique per session id).
  */
 export async function POST(req: Request) {
@@ -27,6 +27,8 @@ export async function POST(req: Request) {
   } catch (err: any) {
     return NextResponse.json({ error: `Invalid signature: ${err?.message}` }, { status: 400 });
   }
+
+  if (event.type === 'charge.refunded') return handleRefund(event.data.object as Stripe.Charge);
 
   if (event.type !== 'checkout.session.completed' && event.type !== 'checkout.session.async_payment_succeeded') {
     return NextResponse.json({ received: true, ignored: event.type });
@@ -68,4 +70,20 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ received: true, recorded: created });
+}
+
+/** A fully refunded charge marks its order refunded (partial refunds leave the license in place). */
+async function handleRefund(charge: Stripe.Charge) {
+  if (!charge.refunded) return NextResponse.json({ received: true, partialRefund: true });
+  const paymentIntent = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id;
+  if (!paymentIntent || !stripe) return NextResponse.json({ received: true, error: 'no payment intent' });
+
+  // Orders are keyed by Checkout Session; look the session up from the payment intent.
+  const sessions = await stripe.checkout.sessions.list({ payment_intent: paymentIntent, limit: 1 });
+  const sessionId = sessions.data[0]?.id;
+  if (!sessionId) return NextResponse.json({ received: true, error: 'no checkout session for charge' });
+
+  const updated = await getRepository().markOrderRefunded(sessionId);
+  if (updated) console.log(`[stripe] order ${sessionId} refunded`);
+  return NextResponse.json({ received: true, refunded: updated });
 }

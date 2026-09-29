@@ -162,4 +162,14 @@ export class FileRepository implements TrackRepository {
     await save(store);
     return true;
   }
+
+  async markOrderRefunded(stripeSessionId: string) {
+    assertWritable();
+    const store = await load();
+    const order = store.orders.find(x => x.stripeSessionId === stripeSessionId);
+    if (!order || order.status === 'refunded') return false;
+    order.status = 'refunded';
+    await save(store);
+    return true;
+  }
 }

@@ -126,5 +126,13 @@ for (const [name, make] of [['postgres (PGlite)', pgliteRepo], ['file store', fi
       assert.equal(await repo.createOrder(order), true);
       assert.equal(await repo.createOrder(order), false, 'a retried webhook must not create a second order');
     });
+
+    test('a full Stripe refund marks the order refunded, once', async () => {
+      const track = (await repo.listPublished())[0];
+      await repo.createOrder({ stripeSessionId: 'cs_test_refund', trackId: track.id, tier: 'standard', amountCents: 1000, currency: 'usd', customerEmail: null });
+      assert.equal(await repo.markOrderRefunded('cs_test_refund'), true);
+      assert.equal(await repo.markOrderRefunded('cs_test_refund'), false, 'a retried refund event is a no-op');
+      assert.equal(await repo.markOrderRefunded('cs_unknown'), false);
+    });
   });
 }

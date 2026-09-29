@@ -6,6 +6,54 @@ import { FileCheck2, Copy, Check, ShieldCheck, Radio, Layers } from 'lucide-reac
 import { SyncMeta } from '@/lib/db/types';
 import { toSlug } from '@/lib/utils';
 
+/** **bold** spans → <strong>. Everything else stays plain text (React escapes it). */
+function inline(text: string): React.ReactNode[] {
+  return text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean).map((part, i) =>
+    part.startsWith('**') && part.endsWith('**')
+      ? <strong key={i} className="font-semibold text-white">{part.slice(2, -2)}</strong>
+      : part,
+  );
+}
+
+/**
+ * Rich text from the sheet's Description cell, without allowing HTML:
+ * blank line = new paragraph, lines starting with "-", "*" or "•" = bullet list,
+ * single line breaks are kept, **text** = bold.
+ */
+function RichDescription({ text }: { text: string }) {
+  const blocks = text.replace(/\r\n?/g, '\n').trim().split(/\n\s*\n/);
+  return (
+    <div className="space-y-3 max-w-3xl text-[13px] text-slate-300 leading-relaxed">
+      {blocks.map((block, bi) => {
+        const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+        const bullet = /^([-*•])\s+/;
+        if (lines.length > 0 && lines.every(l => bullet.test(l))) {
+          return (
+            <ul key={bi} className="space-y-1.5">
+              {lines.map((l, li) => (
+                <li key={li} className="flex gap-2">
+                  <span className="mt-[7px] w-1 h-1 rounded-full bg-gold-500 shrink-0" aria-hidden />
+                  <span>{inline(l.replace(bullet, ''))}</span>
+                </li>
+              ))}
+            </ul>
+          );
+        }
+        return (
+          <p key={bi}>
+            {lines.map((l, li) => (
+              <React.Fragment key={li}>
+                {li > 0 && <br />}
+                {inline(l)}
+              </React.Fragment>
+            ))}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 interface DescriptionBlockProps {
   description: string;
   useCases: string[];
@@ -54,7 +102,7 @@ export function DescriptionBlock({
       {/* Production notes */}
       <section className="px-4 sm:px-6 py-5">
         <h2 className={sectionTitle}>Production Notes</h2>
-        <p className="text-[13px] text-zinc-300 leading-relaxed max-w-3xl">{description}</p>
+        <RichDescription text={description} />
       </section>
 
       {/* Cue sheet */}
@@ -66,9 +114,9 @@ export function DescriptionBlock({
           </h2>
           <button
             onClick={handleCopyCueSheet}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-white/[0.08] text-xs text-zinc-300 hover:text-white hover:border-white/20 transition-colors"
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-white/[0.08] text-xs text-slate-300 hover:text-white hover:border-white/20 transition-colors"
           >
-            {copiedCueSheet ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-zinc-500" />}
+            {copiedCueSheet ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
             {copiedCueSheet ? 'Copied' : 'Copy Cue Sheet'}
           </button>
         </div>
@@ -76,14 +124,14 @@ export function DescriptionBlock({
           {cueRows.map(([label, value, accent]) => (
             <div key={label} className="flex items-baseline gap-3 px-3 py-2 border-r border-b border-white/[0.06] min-w-0">
               <dt className="label-xs w-20 shrink-0">{label}</dt>
-              <dd className={`text-xs font-mono truncate ${accent ? 'text-crimson-400' : 'text-zinc-200'}`} title={value}>
+              <dd className={`text-xs font-mono truncate ${accent ? 'text-brand-400' : 'text-slate-200'}`} title={value}>
                 {value}
               </dd>
             </div>
           ))}
         </dl>
         {!hasPublishingData && (
-          <p className="mt-3 text-xs text-zinc-500">
+          <p className="mt-3 text-xs text-slate-500">
             Composer, publisher and ISRC are included in the license documentation sent with your purchase.
           </p>
         )}
@@ -96,7 +144,7 @@ export function DescriptionBlock({
             <h2 className={sectionTitle}>Instrumentation</h2>
             <div className="flex flex-wrap gap-1">
               {(syncMeta.instrumentation ?? []).map((inst) => (
-                <span key={inst} className={`${chip} font-mono bg-white/[0.03] border-white/[0.08] text-zinc-300`}>
+                <span key={inst} className={`${chip} font-mono bg-white/[0.03] border-white/[0.08] text-slate-300`}>
                   {inst}
                 </span>
               ))}
@@ -106,7 +154,7 @@ export function DescriptionBlock({
             <h2 className={sectionTitle}>Sonic Palette</h2>
             <div className="flex flex-wrap gap-1">
               {(syncMeta.soundPalette ?? []).map((pal) => (
-                <span key={pal} className={`${chip} bg-white/[0.03] border-white/[0.06] text-zinc-400`}>
+                <span key={pal} className={`${chip} bg-white/[0.03] border-white/[0.06] text-slate-400`}>
                   {pal}
                 </span>
               ))}
@@ -124,7 +172,7 @@ export function DescriptionBlock({
               <Link
                 key={uc}
                 href={`/use-cases/${toSlug(uc)}`}
-                className={`${chip} border-white/[0.08] text-zinc-300 hover:text-white hover:border-crimson-500/50 transition-colors`}
+                className={`${chip} border-white/[0.08] text-slate-300 hover:text-white hover:border-brand-500/50 transition-colors`}
               >
                 {uc}
               </Link>
@@ -137,14 +185,14 @@ export function DescriptionBlock({
       <section className="px-4 sm:px-6 py-4 grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
           { icon: <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />, title: 'Direct Sync Indemnity', body: '100% controlled copyright. No secondary CMO fees, PRO collection demands, or third-party claims.' },
-          { icon: <Radio className="w-3.5 h-3.5 text-crimson-400" />, title: 'YouTube CID Safe', body: 'Channel and video whitelisting. No copyright strikes on client channels.' },
-          { icon: <Layers className="w-3.5 h-3.5 text-zinc-400" />, title: 'Stems & Cutdowns', body: '24-bit/48kHz WAV master, isolated stems, and :30/:60 cuts for direct NLE drop.' },
+          { icon: <Radio className="w-3.5 h-3.5 text-brand-400" />, title: 'YouTube CID Safe', body: 'Channel and video whitelisting. No copyright strikes on client channels.' },
+          { icon: <Layers className="w-3.5 h-3.5 text-slate-400" />, title: 'Stems & Cutdowns', body: '24-bit/48kHz WAV master, isolated stems, and :30/:60 cuts for direct NLE drop.' },
         ].map((item) => (
           <div key={item.title} className="flex items-start gap-2">
             <span className="mt-0.5">{item.icon}</span>
             <div>
-              <h3 className="text-xs font-semibold text-zinc-100 font-jakarta tracking-tight">{item.title}</h3>
-              <p className="text-[11px] text-zinc-500 leading-relaxed mt-0.5">{item.body}</p>
+              <h3 className="text-xs font-semibold text-slate-100 font-jakarta tracking-tight">{item.title}</h3>
+              <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5">{item.body}</p>
             </div>
           </div>
         ))}

@@ -8,8 +8,10 @@ import { CatalogExplorer } from '@/components/hub/CatalogExplorer';
 import { PageHeader } from '@/components/navigation/PageHeader';
 import { GenreTiles } from '@/components/hub/GenreTiles';
 import { Container } from '@/components/home/primitives';
-import { catalogStats, getSiteUrl } from '@/lib/utils';
-import { cn } from '@/lib/utils';
+import { catalogStats, getSiteUrl, cn } from '@/lib/utils';
+import { BRAND } from '@/lib/brand';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { breadcrumbSchema, collectionSchema, fitTitle, hubMetaDescription, hubRobots, hubSummary, type Crumb } from '@/lib/seo/hubs';
 
 interface BpmPageProps {
   params: { band: string };
@@ -25,15 +27,19 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: BpmPageProps): Promise<Metadata> {
   const band = findBpmBand(params.band);
   if (!band) return { title: 'Not found' };
+  const tracks = await getTracksByBpmBand(band);
   const siteUrl = getSiteUrl();
   const url = `${siteUrl}/bpm/${band.slug}`;
-  const title = `${band.label} Production Music | ${band.short} Tempo Sync Tracks`;
-  const description = `License ${band.short.toLowerCase()}-tempo production music (${band.label}). ${band.description} Pre-cleared with stems and cutdowns.`;
+  const title = `${band.short} Production Music · ${band.label}`;
+  const description = tracks.length
+    ? hubMetaDescription(band.description, tracks, { omit: 'bpm' })
+    : `${band.description} Pre-cleared with stems and cutdowns.`;
   return {
-    title,
+    title: fitTitle(title),
     description,
     alternates: { canonical: url },
-    openGraph: { title, description, url, siteName: 'B2B Production Music', type: 'website' },
+    robots: hubRobots(tracks.length),
+    openGraph: { title, description, url, siteName: BRAND.name, type: 'website' },
   };
 }
 
@@ -47,33 +53,19 @@ export default async function BpmHubPage({ params }: BpmPageProps) {
   const siteUrl = getSiteUrl();
   const allTracks = await getAllTracks();
 
-  const itemListSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name: `${band.label} Production Music`,
-    description: band.description,
-    url: `${siteUrl}/bpm/${band.slug}`,
-    mainEntity: {
-      '@type': 'ItemList',
-      numberOfItems: tracks.length,
-      itemListElement: tracks.map((track, index) => ({
-        '@type': 'ListItem',
-        position: index + 1,
-        name: track.title,
-        url: `${siteUrl}/tracks/${track.slug}`,
-      })),
-    },
-  };
+  const url = `${siteUrl}/bpm/${band.slug}`;
+  const summary = hubSummary(tracks);
+  const crumbs: Crumb[] = [{ href: '/', label: 'Home' }, { href: '/bpm', label: 'Tempo' }, { label: band.label }];
 
   return (
     <div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }} />
+      <JsonLd data={[collectionSchema(siteUrl, url, `${band.label} production music`, summary, tracks), breadcrumbSchema(siteUrl, crumbs, url)]} />
 
       <PageHeader
-        crumbs={[{ href: '/', label: 'Home' }, { href: '/#catalog', label: 'Catalog' }, { label: band.label }]}
+        crumbs={crumbs}
         eyebrow="Tempo"
-        title={<>{band.short} <span className="text-obsidian-300">· {band.label}</span></>}
-        description={band.description}
+        title={<>{band.short} <span className="text-navy-300">· {band.label}</span></>}
+        description={`${band.description} ${summary}`}
         image="/banners/banner-stage-lights.jpg"
         stats={catalogStats(tracks)}
         actions={
@@ -86,8 +78,8 @@ export default async function BpmHubPage({ params }: BpmPageProps) {
                 className={cn(
                   'h-9 px-4 inline-flex items-center rounded-full border text-xs font-medium transition-colors',
                   b.slug === band.slug
-                    ? 'bg-white text-obsidian-950 border-white'
-                    : 'border-white/15 text-zinc-300 hover:text-white hover:border-white/40',
+                    ? 'bg-white text-navy-950 border-white'
+                    : 'border-white/15 text-slate-300 hover:text-white hover:border-white/40',
                 )}
               >
                 {b.label}
@@ -99,7 +91,7 @@ export default async function BpmHubPage({ params }: BpmPageProps) {
 
       <section className="py-12 lg:py-16">
         <Container>
-          <div className="border border-white/[0.08] bg-obsidian-950">
+          <div className="border border-white/[0.08] bg-navy-950">
             <CatalogExplorer initialTracks={tracks} />
           </div>
         </Container>
