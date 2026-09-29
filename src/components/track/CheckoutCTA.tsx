@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { CheckCircle2, Lock, ArrowRight, Loader2, ShieldCheck, Zap, Globe, Tv, Check, AlertTriangle, FlaskConical } from 'lucide-react';
 import { Track } from '@/lib/db/types';
 import { formatPrice } from '@/lib/utils';
-import { CheckCircle2, Lock, ArrowRight, Loader2, Download, ShieldCheck, Zap, Globe, Tv, Check } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { LICENSE_TIERS, tierPriceCents, type LicenseTierKey } from '@/lib/licensing';
 
 interface CheckoutCTAProps {
   track: Track;
@@ -12,228 +13,197 @@ interface CheckoutCTAProps {
   className?: string;
 }
 
-function CheckoutCTAContent({ track, layout = 'sidebar', className = '' }: CheckoutCTAProps) {
-  const [selectedTier, setSelectedTier] = useState<'standard' | 'agency' | 'broadcast'>('agency');
-  const [loading, setLoading] = useState(false);
-  const searchParams = useSearchParams();
-  const isSuccess = searchParams.get('checkout_success') === 'true';
+const TIER_ICONS: Record<LicenseTierKey, React.ReactNode> = {
+  standard: <Globe className="w-3.5 h-3.5" />,
+  commercial: <Zap className="w-3.5 h-3.5" />,
+  broadcast: <Tv className="w-3.5 h-3.5" />,
+};
+const TIER_COLORS: Record<LicenseTierKey, string> = {
+  standard: 'text-zinc-300',
+  commercial: 'text-crimson-400',
+  broadcast: 'text-purple-400',
+};
 
-  const tierPrices = {
-    standard: track.standardPriceCents,
-    agency: track.agencyPriceCents || 2000,
-    broadcast: track.broadcastPriceCents,
-  };
+type Confirmation = { state: 'checking' } | { state: 'paid'; tierName: string | null; email: string | null } | { state: 'unverified' };
+
+function CheckoutCTAContent({ track, className = '' }: CheckoutCTAProps) {
+  const [selectedTier, setSelectedTier] = useState<LicenseTierKey>('commercial');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [demo, setDemo] = useState(false);
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const searchParams = useSearchParams();
+
+  // Returning from Stripe: confirm with the server rather than trusting the URL.
+  const sessionId = searchParams.get('checkout') === 'success' ? searchParams.get('session_id') : null;
+  useEffect(() => {
+    if (!sessionId) return;
+    setConfirmation({ state: 'checking' });
+    fetch(`/api/checkout/session?session_id=${encodeURIComponent(sessionId)}`)
+      .then(r => r.json())
+      .then(d => setConfirmation(d.paid ? { state: 'paid', tierName: d.tierName, email: d.email } : { state: 'unverified' }))
+      .catch(() => setConfirmation({ state: 'unverified' }));
+  }, [sessionId]);
 
   const handleCheckout = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slug: track.slug, tier: selectedTier }),
       });
-      const data = await res.json();
-      if (data.url) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.url) {
         window.location.href = data.url;
-      } else {
-        alert('Unable to initialize checkout session: ' + (data.error || 'Unknown error'));
-        setLoading(false);
+        return;
       }
-    } catch (err: any) {
-      alert('Checkout error: ' + err.message);
-      setLoading(false);
+      if (data.demo) setDemo(true);
+      else setError(data.error ?? 'Checkout is unavailable right now — please try again or contact licensing.');
+    } catch {
+      setError('Could not reach checkout — check your connection and try again.');
     }
+    setLoading(false);
   };
 
-  if (isSuccess) {
+  if (confirmation?.state === 'checking') {
     return (
-      <div className="glass-panel border-emerald-500/40 rounded-3xl p-6 sm:p-8 text-center shadow-2xl shadow-emerald-950/40">
-        <div className="w-14 h-14 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/30">
-          <CheckCircle2 className="w-8 h-8" />
-        </div>
-        <h3 className="font-syne text-xl sm:text-2xl font-black text-white mb-2">Synchronization License Issued</h3>
-        <p className="text-xs sm:text-sm text-zinc-300 max-w-lg mx-auto mb-6">
-          Your perpetual sync agreement for <strong>&ldquo;{track.title}&rdquo;</strong> is confirmed.
-          Master WAV, isolated stems, and the indemnified cue sheet have been prepared.
-        </p>
-        <div className="inline-flex items-center gap-2 btn-crimson text-white font-bold px-6 py-3 rounded-xl cursor-pointer shadow-xl shadow-crimson-600/40 text-xs sm:text-sm">
-          <Download className="w-4 h-4" />
-          <span>Download Master Package (.ZIP)</span>
-        </div>
+      <div className={`p-5 flex items-center gap-2 text-sm text-zinc-400 ${className}`}>
+        <Loader2 className="w-4 h-4 animate-spin" /> Confirming your purchase…
       </div>
     );
   }
 
-  const tiers = [
-    {
-      key: 'standard' as const,
-      label: 'Web & Social',
-      icon: <Globe className="w-4 h-4" />,
-      color: 'text-zinc-300',
-      badge: null,
-      description: 'YouTube, podcasts, social reels, internal corporate decks & websites.',
-      features: [
-        'Unlimited online views & streams',
-        'Master 24-bit WAV & 320kbps MP3',
-        'YouTube Content ID Whitelisting',
-      ],
-      footer: 'Perpetual single-project clearance',
-    },
-    {
-      key: 'agency' as const,
-      label: 'Commercial & Ads',
-      icon: <Zap className="w-4 h-4" />,
-      color: 'text-crimson-400',
-      badge: 'Recommended',
-      description: 'Client projects, paid digital ads (Meta/TikTok/Google), trade shows, promos.',
-      features: [
-        'All Web rights + Paid Digital Ads',
-        'Full Isolated Stems Archive included',
-        'All Alt-Mixes & Cutdowns (:60, :30, :15)',
-        'Full agency client transfer permitted',
-      ],
-      footer: 'Agency client handover permitted',
-    },
-    {
-      key: 'broadcast' as const,
-      label: 'Full Buyout & TV',
-      icon: <Tv className="w-4 h-4" />,
-      color: 'text-purple-400',
-      badge: null,
-      description: 'Linear TV commercials, Netflix/OTT streaming, theatrical films, video games.',
-      features: [
-        'Worldwide TV & OTT Synchronization',
-        'Unlimited media spend & broadcast reach',
-        'Full Stems + 30s/60s Broadcast Cuts',
-        'Full legal indemnification & cue-sheet filing',
-      ],
-      footer: 'Official Cue Sheet & ISRC registration',
-    },
-  ];
-
-  return (
-    <div className={`glass-panel rounded-3xl p-5 sm:p-6 relative shadow-2xl overflow-hidden border border-white/10 ${className}`}>
-      {/* Ambient Crimson Glow */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-crimson-600/10 rounded-full blur-3xl pointer-events-none" />
-
-      {/* Top Header */}
-      <div className="pb-4 mb-4 border-b border-white/[0.08] relative z-10">
-        <div className="flex items-center justify-between gap-2 mb-1">
-          <span className="text-[11px] font-mono font-bold text-crimson-400 uppercase tracking-widest">
-            Commercial Sync License
-          </span>
-          <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/25 font-bold">
-            100% Pre-Cleared
-          </span>
+  if (confirmation?.state === 'paid') {
+    return (
+      <div className={`p-5 ${className}`}>
+        <div className="flex items-center gap-2 text-emerald-400">
+          <CheckCircle2 className="w-4 h-4" />
+          <span className="label-xs !text-emerald-400">License confirmed</span>
         </div>
-        <h3 className="font-syne text-xl sm:text-2xl font-black text-white tracking-tight">
-          Select Your Rights
-        </h3>
-        <p className="text-xs text-zinc-400 mt-1 font-jakarta">
-          Perpetual license. Zero recurring subscription fees.
+        <h3 className="text-lg font-bold tracking-tight mt-3">Thank you — you&apos;re licensed.</h3>
+        <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
+          {confirmation.tierName ? <>Your <span className="text-zinc-200">{confirmation.tierName}</span> license for </> : 'Your license for '}
+          <span className="text-zinc-200">&ldquo;{track.title}&rdquo;</span> is active. A receipt
+          {confirmation.email ? <> has been sent to <span className="font-mono text-zinc-300">{confirmation.email}</span></> : ' is on its way'}.
         </p>
       </div>
+    );
+  }
 
-      {/* 3 Selectable Tier Cards (Vertical Stack for Musicbed / PremiumBeat Sidebar feel) */}
-      <div className="space-y-3 mb-5 relative z-10">
-        {tiers.map((tier) => {
+  return (
+    <div className={`p-5 ${className}`}>
+      {confirmation?.state === 'unverified' && (
+        <div className="mb-4 flex gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          We couldn&apos;t confirm that payment. If you were charged, your receipt email is your proof of license — or contact licensing.
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2">
+        <span className="label-xs">Commercial sync license</span>
+        <span className="inline-flex items-center h-5 px-1.5 rounded-sm text-[9px] font-mono font-medium uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+          100% Pre-cleared
+        </span>
+      </div>
+      <p className="text-xs text-zinc-500 mt-1">Perpetual license · no subscription</p>
+
+      {/* Tier radio list */}
+      <div className="mt-4 border border-white/[0.08] rounded-lg divide-y divide-white/[0.06] overflow-hidden" role="radiogroup" aria-label="License tier">
+        {LICENSE_TIERS.map((tier) => {
           const isSelected = selectedTier === tier.key;
           return (
-            <div
+            <button
               key={tier.key}
+              role="radio"
+              aria-checked={isSelected}
               onClick={() => setSelectedTier(tier.key)}
-              className={`cursor-pointer rounded-2xl p-4 border transition-all relative ${
-                isSelected
-                  ? 'border-crimson-500 bg-crimson-600/15 shadow-xl shadow-crimson-600/20 ring-1 ring-crimson-500'
-                  : 'border-white/10 bg-obsidian-900/60 hover:border-white/20 hover:bg-obsidian-850/80'
+              className={`w-full text-left px-3.5 py-3 transition-colors ${
+                isSelected ? 'bg-crimson-600/[0.08] shadow-[inset_2px_0_0_#DC2626]' : 'hover:bg-white/[0.02]'
               }`}
             >
-              {tier.badge && (
-                <div className="absolute -top-2.5 right-4 bg-crimson-600 text-white text-[9px] font-mono font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-md shadow-crimson-600/50">
-                  {tier.badge}
-                </div>
-              )}
-
-              {/* Tier Header Line */}
-              <div className="flex items-center justify-between gap-2 mb-1.5">
-                <div className="flex items-center gap-2">
-                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
-                    isSelected ? 'border-crimson-400 bg-crimson-500 text-white' : 'border-zinc-500 bg-obsidian-900'
-                  }`}>
-                    {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                  </div>
-                  <span className={`text-xs font-bold uppercase tracking-wider font-syne ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
-                    {tier.label}
-                  </span>
-                </div>
-                <div className="font-mono text-lg font-black text-white">
-                  {formatPrice(tierPrices[tier.key])}
-                </div>
+              <div className="flex items-center gap-2.5">
+                <span className={`w-3.5 h-3.5 rounded-full border inline-flex items-center justify-center shrink-0 ${isSelected ? 'border-crimson-500 bg-crimson-600 text-white' : 'border-obsidian-500'}`}>
+                  {isSelected && <Check className="w-2 h-2 stroke-[3]" />}
+                </span>
+                <span className={TIER_COLORS[tier.key]}>{TIER_ICONS[tier.key]}</span>
+                <span className={`flex-1 text-[13px] font-medium ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
+                  {tier.name} <span className="text-zinc-500 font-normal">· {tier.label}</span>
+                </span>
+                <span className="text-sm font-mono font-semibold tabular-nums text-white">{formatPrice(tierPriceCents(track, tier.key))}</span>
               </div>
-
-              <p className="text-[11px] text-zinc-400 leading-relaxed pl-6">
-                {tier.description}
-              </p>
-
-              {/* Active Features Breakdown */}
-              {isSelected && (
-                <div className="mt-3 pt-3 border-t border-white/[0.08] pl-6 space-y-1.5">
-                  {tier.features.map((f) => (
-                    <div key={f} className="flex items-start gap-1.5 text-[11px] text-zinc-300">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-crimson-400 shrink-0 mt-0.5" />
-                      <span>{f}</span>
-                    </div>
-                  ))}
-                  <div className="text-[10px] font-mono text-zinc-500 pt-1">
-                    ✓ {tier.footer}
-                  </div>
-                </div>
-              )}
-            </div>
+              <p className="text-[11px] text-zinc-500 leading-snug mt-1 pl-6">{tier.summary}</p>
+            </button>
           );
         })}
       </div>
 
-      {/* CTA Button */}
+      {/* Selected tier inclusions */}
+      {(() => {
+        const tier = LICENSE_TIERS.find(t => t.key === selectedTier)!;
+        return (
+          <ul className="mt-4 space-y-1.5">
+            {tier.features.map((f) => (
+              <li key={f} className="flex items-start gap-1.5 text-xs text-zinc-300">
+                <Check className="w-3 h-3 text-crimson-400 shrink-0 mt-0.5" />
+                <span>{f}</span>
+              </li>
+            ))}
+            <li className="text-[10px] font-mono text-zinc-500 pl-[18px] pt-0.5">{tier.scope}</li>
+          </ul>
+        );
+      })()}
+
+      {/* CTA */}
       <button
         onClick={handleCheckout}
         disabled={loading}
-        className="w-full py-3.5 px-5 rounded-2xl btn-crimson disabled:opacity-50 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-2xl shadow-crimson-600/40 relative z-10 hover:scale-[1.02]"
+        className="mt-5 w-full h-11 rounded-full bg-crimson-600 hover:bg-crimson-500 disabled:opacity-50 text-white text-sm font-semibold inline-flex items-center justify-center gap-2 transition-colors"
       >
         {loading ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span>Connecting Stripe Checkout...</span>
+            Opening secure checkout…
           </>
         ) : (
           <>
-            <span>License &amp; Download</span>
-            <span className="font-mono font-normal opacity-95">
-              ({formatPrice(tierPrices[selectedTier])})
-            </span>
+            License &amp; download
+            <span className="font-mono tabular-nums opacity-90">{formatPrice(tierPriceCents(track, selectedTier))}</span>
             <ArrowRight className="w-4 h-4" />
           </>
         )}
       </button>
 
-      {/* Trust & Guarantee Indicators */}
-      <div className="mt-4 pt-3.5 border-t border-white/[0.08] space-y-2 text-[11px] text-zinc-400 relative z-10">
-        <div className="flex items-center gap-2 text-zinc-300">
-          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>100% Pre-Cleared Worldwide Sync</span>
+      {error && (
+        <p role="alert" className="mt-3 flex gap-1.5 text-xs text-crimson-300">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" /> {error}
+        </p>
+      )}
+      {demo && (
+        <p role="status" className="mt-3 flex gap-1.5 rounded-md border border-white/10 bg-white/[0.03] p-2.5 text-xs text-zinc-400">
+          <FlaskConical className="w-3.5 h-3.5 shrink-0 mt-px text-zinc-300" />
+          Demo mode: Stripe isn&apos;t configured on this environment, so no payment was taken. Add STRIPE_SECRET_KEY to enable checkout.
+        </p>
+      )}
+
+      {/* Trust */}
+      <div className="mt-5 pt-4 border-t border-white/[0.06] space-y-2 text-xs text-zinc-400">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          100% pre-cleared worldwide sync
         </div>
         <div className="flex items-center gap-2">
-          <Lock className="w-3.5 h-3.5 text-crimson-400 shrink-0" />
-          <span>Instant WAV + Stems Download via Stripe</span>
+          <Lock className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+          Secure payment by Stripe · receipt by email
         </div>
-        <div className="pt-1 text-center">
-          <a
-            href="mailto:licensing@b2bproductionmusic.com?subject=Enterprise%20Custom%20Sync%20Inquiry"
-            className="text-crimson-400 hover:text-crimson-300 font-mono text-[10px] underline"
-          >
-            Need custom Enterprise Buyout?
-          </a>
-        </div>
+        <a
+          href="mailto:licensing@b2bproductionmusic.com?subject=Enterprise%20Custom%20Sync%20Inquiry"
+          className="block pt-1 font-mono text-[11px] text-zinc-500 hover:text-crimson-400 transition-colors"
+        >
+          Custom enterprise buyout →
+        </a>
       </div>
     </div>
   );
@@ -241,11 +211,7 @@ function CheckoutCTAContent({ track, layout = 'sidebar', className = '' }: Check
 
 export function CheckoutCTA(props: CheckoutCTAProps) {
   return (
-    <Suspense fallback={
-      <div className="glass-panel rounded-3xl p-6 text-center text-zinc-400 animate-pulse">
-        Loading commercial sync licensing options...
-      </div>
-    }>
+    <Suspense fallback={<div className="p-5 text-xs text-zinc-500">Loading licensing options…</div>}>
       <CheckoutCTAContent {...props} />
     </Suspense>
   );

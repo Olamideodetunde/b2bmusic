@@ -92,6 +92,19 @@ const config: Config = {
           "0%, 100%": { borderColor: "rgba(255, 255, 255, 0.1)" },
           "50%":      { borderColor: "rgba(220, 38, 38, 0.6)" },
         },
+        // ── Landing page motion ──
+        marquee: {
+          "0%":   { transform: "translate3d(0, 0, 0)" },
+          "100%": { transform: "translate3d(-50%, 0, 0)" },
+        },
+        kenburns: {
+          "0%":   { transform: "scale(1.12)" },
+          "100%": { transform: "scale(1)" },
+        },
+        progress: {
+          "0%":   { transform: "scaleX(0)" },
+          "100%": { transform: "scaleX(1)" },
+        },
       },
       animation: {
         "fade-in-up":     "fade-in-up 0.6s ease-out forwards",
@@ -104,6 +117,9 @@ const config: Config = {
         "laser-scan":     "laser-scan 2.5s ease-in-out infinite",
         "radar-sweep":    "radar-sweep 8s linear infinite",
         "border-glow":    "border-glow 3s ease-in-out infinite",
+        marquee:          "marquee 48s linear infinite",
+        kenburns:         "kenburns 9s cubic-bezier(0.16, 1, 0.3, 1) both",
+        progress:         "progress 7s linear both",
       },
     },
   },

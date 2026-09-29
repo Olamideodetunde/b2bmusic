@@ -1,14 +1,39 @@
 'use client';
 
 import React from 'react';
-import { useAudio } from './GlobalAudioContext';
-import { Play, Pause, X, Volume2, VolumeX, RotateCcw, Repeat } from 'lucide-react';
 import Link from 'next/link';
-import { formatDuration } from '@/lib/utils';
+import {
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Repeat,
+  Volume2,
+  VolumeX,
+  Bookmark,
+  BookmarkCheck,
+  PackageOpen,
+  X,
+  AudioLines,
+} from 'lucide-react';
+import { useAudio, StemBus, STEM_BUS_CATEGORIES } from './GlobalAudioContext';
+import { Waveform } from './Waveform';
+import { useWorkspace, DOWNLOAD_FORMATS } from '@/components/workspace/WorkspaceContext';
+import { cn, formatDuration, rightsLabel } from '@/lib/utils';
 
+const STEM_BUSES: StemBus[] = ['Master', 'Drums', 'Bass', 'Melody', 'Other'];
+
+const iconBtn =
+  'inline-flex items-center justify-center w-7 h-7 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors disabled:opacity-30 disabled:pointer-events-none';
+
+/**
+ * Persistent global audio dock. Always mounted so the layout never reflows;
+ * renders an idle state until a track is auditioned.
+ */
 export function MiniPlayerBar() {
   const {
     currentTrack,
+    activeMixName,
     isPlaying,
     currentTime,
     duration,
@@ -18,118 +43,198 @@ export function MiniPlayerBar() {
     volume,
     setVolume,
     isLooping,
-    toggleLoop
+    toggleLoop,
+    queue,
+    playNext,
+    playPrev,
+    mutedStems,
+    soloStem,
+    toggleStemMute,
+    toggleStemSolo,
   } = useAudio();
+  const { isInProject, toggleProject, openStems, downloadFormat, setDownloadFormat } = useWorkspace();
 
-  if (!currentTrack) return null;
+  const effectiveDuration = currentTrack ? (duration > 0 ? duration : currentTrack.durationSeconds) : 0;
+  const progress = effectiveDuration > 0 ? Math.min(1, currentTime / effectiveDuration) : 0;
+  const queueIndex = currentTrack ? queue.findIndex(t => t.id === currentTrack.id) : -1;
+  const saved = currentTrack ? isInProject(currentTrack.id) : false;
 
-  const effectiveDuration = duration > 0 ? duration : currentTrack.durationSeconds;
-  const progressPercent = Math.min(100, (currentTime / effectiveDuration) * 100);
-
-  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const ratio = Math.max(0, Math.min(1, clickX / rect.width));
-    seek(ratio * effectiveDuration);
-  };
+  const busAvailable = (bus: StemBus) =>
+    !!currentTrack?.stems?.some(s => STEM_BUS_CATEGORIES[bus].includes(s.category));
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-obsidian-950/90 backdrop-blur-2xl border-t border-white/[0.1] shadow-[0_-12px_40px_rgba(0,0,0,0.85)] transition-all">
-      {/* Interactive Scrubbable Neon Crimson progress bar at very top */}
-      <div
-        onClick={handleProgressClick}
-        className="absolute -top-1 left-0 right-0 h-2 bg-obsidian-800/80 cursor-pointer group/bar select-none"
-        title="Click to scrub"
-      >
-        <div
-          className="h-[3px] group-hover/bar:h-[5px] bg-gradient-to-r from-crimson-500 via-crimson-400 to-rose-400 shadow-[0_0_12px_#EF4444] transition-all duration-100"
-          style={{ width: `${progressPercent}%` }}
-        />
+    <div className="fixed bottom-0 left-0 right-0 z-50 h-[72px] bg-obsidian-950/85 backdrop-blur-md border-t border-white/[0.08]">
+      {/* Mobile: thin progress line on the top edge */}
+      <div className="md:hidden absolute top-0 left-0 right-0 h-0.5 bg-obsidian-800">
+        <div className="h-full bg-crimson-500" style={{ width: `${progress * 100}%` }} />
       </div>
 
-      <div className="w-full px-4 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 py-2.5 flex items-center justify-between gap-4">
-        {/* Track info */}
-        <div className="flex items-center gap-3.5 min-w-0 max-w-[240px] sm:max-w-xs md:max-w-sm">
-          {currentTrack.coverImageUrl ? (
+      <div className="h-full px-3 sm:px-4 flex items-center gap-4">
+        {/* ─── LEFT: now playing ─── */}
+        <div className="flex items-center gap-3 min-w-0 flex-1 md:flex-none md:w-64 lg:w-72">
+          {currentTrack?.coverImageUrl ? (
             <img
               src={currentTrack.coverImageUrl}
-              alt={currentTrack.title}
-              className="w-10 h-10 rounded-xl object-cover border border-white/10 shrink-0 shadow-md"
+              alt=""
+              className="w-10 h-10 rounded object-cover border border-white/10 shrink-0"
             />
           ) : (
-            <div className="w-10 h-10 rounded-xl bg-obsidian-900 border border-crimson-500/40 flex items-center justify-center shrink-0">
-              <span className="text-[10px] font-mono font-bold text-crimson-400">HQ</span>
+            <div className="w-10 h-10 rounded bg-obsidian-900 border border-white/[0.08] flex items-center justify-center shrink-0">
+              <AudioLines className="w-4 h-4 text-obsidian-500" />
             </div>
           )}
-          <div className="min-w-0">
-            <Link
-              href={`/tracks/${currentTrack.slug}`}
-              className="font-syne text-sm font-bold text-white truncate block hover:text-crimson-400 transition-colors"
-            >
-              {currentTrack.title}
-            </Link>
-            <p className="font-mono text-xs text-zinc-400 truncate mt-0.5">
-              {currentTrack.genre} · {currentTrack.bpm} BPM · {currentTrack.musicalKey}
-            </p>
+
+          {currentTrack ? (
+            <div className="min-w-0 flex-1">
+              <Link
+                href={`/tracks/${currentTrack.slug}`}
+                className="block text-[13px] font-semibold text-white truncate tracking-tight hover:text-crimson-400 transition-colors"
+              >
+                {currentTrack.title}
+              </Link>
+              <div className="flex items-center gap-2 mt-0.5 min-w-0">
+                <span className="text-xs text-zinc-400 truncate">{currentTrack.syncMeta?.composer}</span>
+                <span className="hidden lg:inline-flex shrink-0 items-center px-1.5 h-4 rounded-sm text-[9px] font-mono font-medium uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+                  {rightsLabel(currentTrack.syncMeta?.proAffiliation)}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="min-w-0 flex-1">
+              <div className="text-[13px] font-medium text-zinc-400">Nothing loaded</div>
+              <div className="text-xs text-obsidian-400">Select a track to audition</div>
+            </div>
+          )}
+
+          <button
+            onClick={() => currentTrack && toggleProject(currentTrack.id)}
+            disabled={!currentTrack}
+            className={cn(iconBtn, saved && 'text-crimson-400 hover:text-crimson-300')}
+            title={saved ? 'Remove from project' : 'Add to project'}
+            aria-pressed={saved}
+          >
+            {saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+          </button>
+
+          {/* Mobile play toggle */}
+          <button
+            onClick={togglePlay}
+            disabled={!currentTrack}
+            className="md:hidden w-9 h-9 rounded-full bg-crimson-600 text-white flex items-center justify-center shrink-0 disabled:opacity-40"
+            aria-label={isPlaying ? 'Pause' : 'Play'}
+          >
+            {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
+          </button>
+        </div>
+
+        {/* ─── CENTER: transport, scrubber, stems ─── */}
+        <div className="hidden md:flex flex-1 min-w-0 flex-col justify-center gap-1.5 border-x border-white/[0.06] px-4 h-full">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-0.5 shrink-0">
+              <button onClick={playPrev} disabled={!currentTrack} className={iconBtn} aria-label="Previous / restart">
+                <SkipBack className="w-3.5 h-3.5 fill-current" />
+              </button>
+              <button
+                onClick={togglePlay}
+                disabled={!currentTrack}
+                className="w-8 h-8 mx-0.5 rounded-full bg-crimson-600 hover:bg-crimson-500 text-white flex items-center justify-center transition-colors disabled:opacity-40 disabled:bg-obsidian-700"
+                aria-label={isPlaying ? 'Pause' : 'Play'}
+              >
+                {isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
+              </button>
+              <button
+                onClick={playNext}
+                disabled={!currentTrack || queueIndex < 0 || queueIndex >= queue.length - 1}
+                className={iconBtn}
+                aria-label="Next track"
+              >
+                <SkipForward className="w-3.5 h-3.5 fill-current" />
+              </button>
+              <button
+                onClick={toggleLoop}
+                disabled={!currentTrack}
+                className={cn(iconBtn, isLooping && 'text-crimson-400 bg-crimson-600/15 hover:text-crimson-300')}
+                aria-pressed={isLooping}
+                title={isLooping ? 'Loop on' : 'Loop off'}
+              >
+                <Repeat className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <span className="w-10 text-right text-[11px] font-mono tabular-nums text-zinc-200 shrink-0">
+              {formatDuration(currentTime)}
+            </span>
+            {currentTrack ? (
+              <Waveform
+                seed={currentTrack.id}
+                progress={progress}
+                durationSeconds={effectiveDuration}
+                isActive
+                onSeek={(r) => seek(r * effectiveDuration)}
+                bars={120}
+                className="flex-1 h-7"
+              />
+            ) : (
+              <div className="flex-1 h-px bg-obsidian-700" />
+            )}
+            <span className="w-10 text-[11px] font-mono tabular-nums text-zinc-500 shrink-0">
+              {formatDuration(effectiveDuration)}
+            </span>
+          </div>
+
+          {/* Stem monitor: click the name to mute, S to solo */}
+          <div className="flex items-center gap-1.5 pl-[190px] min-w-0">
+            {STEM_BUSES.map(bus => {
+              const available = busAvailable(bus);
+              const muted = mutedStems.includes(bus);
+              const solo = soloStem === bus;
+              return (
+                <div
+                  key={bus}
+                  className={cn(
+                    'inline-flex items-center h-5 rounded-sm border text-[10px] font-mono uppercase tracking-wider overflow-hidden shrink-0',
+                    !available && 'opacity-30 pointer-events-none',
+                    solo ? 'border-crimson-500/60 bg-crimson-600/15' : 'border-white/[0.08] bg-white/[0.02]',
+                  )}
+                >
+                  <button
+                    onClick={() => toggleStemMute(bus)}
+                    className={cn(
+                      'px-1.5 h-full transition-colors',
+                      muted ? 'text-obsidian-400 line-through' : 'text-zinc-300 hover:text-white',
+                    )}
+                    aria-pressed={muted}
+                    title={`${muted ? 'Unmute' : 'Mute'} ${bus}`}
+                  >
+                    {bus}
+                  </button>
+                  <button
+                    onClick={() => toggleStemSolo(bus)}
+                    className={cn(
+                      'px-1 h-full border-l border-white/[0.08] transition-colors',
+                      solo ? 'text-crimson-300 bg-crimson-600/20' : 'text-obsidian-400 hover:text-white',
+                    )}
+                    aria-pressed={solo}
+                    title={`Solo ${bus}`}
+                  >
+                    S
+                  </button>
+                </div>
+              );
+            })}
+            {currentTrack && (
+              <span className="ml-auto pl-2 text-[10px] font-mono text-obsidian-400 truncate">{activeMixName}</span>
+            )}
           </div>
         </div>
 
-        {/* Play Controls & Transport */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          <button
-            onClick={() => seek(0)}
-            className="hidden sm:flex p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors"
-            title="Restart Track"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
-
-          <button
-            onClick={togglePlay}
-            className="w-10 h-10 rounded-full btn-crimson text-white flex items-center justify-center shadow-lg shadow-crimson-600/40 hover:scale-105 transition-transform"
-            aria-label={isPlaying ? 'Pause' : 'Play'}
-          >
-            {isPlaying ? <Pause className="w-4 h-4 fill-current animate-pulse" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
-          </button>
-
-          <button
-            onClick={toggleLoop}
-            className={`hidden sm:flex p-2 rounded-xl transition-colors ${
-              isLooping ? 'text-crimson-400 bg-crimson-600/20' : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
-            }`}
-            title={isLooping ? 'Loop Active' : 'Loop Off'}
-          >
-            <Repeat className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Time display */}
-        <div className="hidden sm:flex items-center gap-1.5 text-xs font-mono text-zinc-400">
-          <span className="text-white font-bold">{formatDuration(Math.floor(currentTime))}</span>
-          <span className="text-zinc-600">/</span>
-          <span>{formatDuration(effectiveDuration)}</span>
-        </div>
-
-        {/* Waveform mini visualiser */}
-        <div className="hidden md:flex items-center gap-[2.5px] h-7 w-28 lg:w-44 xl:w-64">
-          {Array.from({ length: 32 }).map((_, i) => {
-            const h = 25 + ((i * 11 + (currentTrack.id * 7)) % 65);
-            return (
-              <div
-                key={i}
-                className={`flex-1 rounded-full transition-all duration-150 ${isPlaying ? 'bg-gradient-to-t from-crimson-600 to-crimson-400 bar-playing shadow-[0_0_4px_rgba(220,38,38,0.8)]' : 'bg-obsidian-700'}`}
-                style={{ height: `${h}%`, animationDelay: `${(i % 10) * 0.05}s` }}
-              />
-            );
-          })}
-        </div>
-
-        {/* Volume & License CTA + Dismiss */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="hidden lg:flex items-center gap-2 bg-white/[0.03] px-2.5 py-1 rounded-xl border border-white/5">
+        {/* ─── RIGHT: volume, format, package ─── */}
+        <div className="hidden md:flex items-center gap-3 shrink-0">
+          <div className="hidden lg:flex items-center gap-1.5">
             <button
               onClick={() => setVolume(volume === 0 ? 0.85 : 0)}
-              className="text-zinc-400 hover:text-white"
+              className={iconBtn}
+              aria-label={volume === 0 ? 'Unmute' : 'Mute'}
             >
               {volume === 0 ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
             </button>
@@ -140,23 +245,39 @@ export function MiniPlayerBar() {
               step="0.05"
               value={volume}
               onChange={(e) => setVolume(parseFloat(e.target.value))}
-              className="w-16 h-1 bg-obsidian-700 rounded-lg appearance-none cursor-pointer accent-crimson-500"
+              className="w-20 h-1 bg-obsidian-700 rounded-lg appearance-none cursor-pointer accent-crimson-500"
               aria-label="Volume"
             />
           </div>
 
-          <Link
-            href={`/tracks/${currentTrack.slug}`}
-            className="text-xs font-bold btn-crimson text-white px-3.5 py-1.5 rounded-xl transition-all shadow-md shadow-crimson-950/40"
-          >
-            License
-          </Link>
+          <div className="flex items-center h-7 rounded-md border border-white/[0.08] p-0.5" role="radiogroup" aria-label="Download format">
+            {DOWNLOAD_FORMATS.map(fmt => (
+              <button
+                key={fmt}
+                role="radio"
+                aria-checked={downloadFormat === fmt}
+                onClick={() => setDownloadFormat(fmt)}
+                className={cn(
+                  'px-1.5 h-full rounded-[4px] text-[10px] font-mono font-medium transition-colors',
+                  downloadFormat === fmt ? 'bg-white/[0.08] text-white' : 'text-zinc-500 hover:text-zinc-200',
+                )}
+              >
+                {fmt}
+              </button>
+            ))}
+          </div>
 
           <button
-            onClick={stopTrack}
-            className="w-7 h-7 flex items-center justify-center rounded-lg bg-obsidian-900 hover:bg-obsidian-800 text-zinc-400 hover:text-white border border-white/10 transition-colors"
-            aria-label="Close player"
+            onClick={() => currentTrack && openStems(currentTrack)}
+            disabled={!currentTrack}
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-crimson-600 hover:bg-crimson-500 text-white text-xs font-semibold transition-colors disabled:opacity-40 disabled:bg-obsidian-700"
           >
+            <PackageOpen className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline">Stem Package</span>
+            <span className="xl:hidden">Stems</span>
+          </button>
+
+          <button onClick={stopTrack} disabled={!currentTrack} className={iconBtn} aria-label="Eject track">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>

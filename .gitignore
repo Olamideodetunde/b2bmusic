@@ -1,39 +1,29 @@
 # dependencies
-/node_modules
-/.pnp
-.pnp.js
-.yarn/install-state.gz
-
-# testing
-/coverage
+node_modules/
 
 # next.js
-/.next/
-/out/
+.next/
+out/
+next-env.d.ts
 
-# production
-/build
+# local data store (development only)
+.data/
 
-# misc
-.DS_Store
-*.pem
-
-# debug logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local environment files (DO NOT COMMIT SECRETS)
-.env*.local
+# secrets — commit .env.example, never real keys
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*.local
 
-# vercel
-.vercel
+# import-script output
+fixtures/*.results.csv
 
-# typescript
+# misc
+*.log
+.DS_Store
 *.tsbuildinfo
-next-env.d.ts
+
+# database backups (contain production data)
+db/backups/
+
+# zip archives
+*.zip

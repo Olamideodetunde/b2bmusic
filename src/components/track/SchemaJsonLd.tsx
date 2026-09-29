@@ -1,5 +1,7 @@
 import React from 'react';
 import { Track } from '@/lib/db/types';
+import { toSlug } from '@/lib/utils';
+import { LICENSE_TIERS, tierPriceCents } from '@/lib/licensing';
 
 interface SchemaJsonLdProps {
   track: Track;
@@ -43,54 +45,20 @@ export function SchemaJsonLd({ track, siteUrl }: SchemaJsonLdProps) {
       '@type': 'Brand',
       name: 'B2B Production Music',
     },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.9',
-      reviewCount: '24',
-      bestRating: '5',
-      worstRating: '1',
-    },
-    offers: [
-      {
-        '@type': 'Offer',
-        name: 'Creator & Web License',
-        price: (track.standardPriceCents / 100).toFixed(2),
-        priceCurrency: 'USD',
-        availability: 'https://schema.org/InStock',
-        priceValidUntil: '2028-12-31',
-        url: pageUrl,
-        seller: {
-          '@type': 'Organization',
-          name: 'B2B Production Music',
-        },
+    // No aggregateRating: there are no real reviews, and fabricated review markup
+    // violates Google's structured-data policies (risking a manual action).
+    offers: LICENSE_TIERS.map((tier) => ({
+      '@type': 'Offer',
+      name: `${tier.name} License — ${tier.label}`,
+      price: (tierPriceCents(track, tier.key) / 100).toFixed(2),
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+      url: pageUrl,
+      seller: {
+        '@type': 'Organization',
+        name: 'B2B Production Music',
       },
-      {
-        '@type': 'Offer',
-        name: 'Commercial & Agency License (Includes Stems)',
-        price: ((track.agencyPriceCents || 2000) / 100).toFixed(2),
-        priceCurrency: 'USD',
-        availability: 'https://schema.org/InStock',
-        priceValidUntil: '2028-12-31',
-        url: pageUrl,
-        seller: {
-          '@type': 'Organization',
-          name: 'B2B Production Music',
-        },
-      },
-      {
-        '@type': 'Offer',
-        name: 'Broadcast, OTT & Theatrical Sync Buyout',
-        price: (track.broadcastPriceCents / 100).toFixed(2),
-        priceCurrency: 'USD',
-        availability: 'https://schema.org/InStock',
-        priceValidUntil: '2028-12-31',
-        url: pageUrl,
-        seller: {
-          '@type': 'Organization',
-          name: 'B2B Production Music',
-        },
-      }
-    ],
+    })),
   };
 
   // 3. BreadcrumbList Structured Data
@@ -108,7 +76,7 @@ export function SchemaJsonLd({ track, siteUrl }: SchemaJsonLdProps) {
         '@type': 'ListItem',
         position: 2,
         name: track.genre,
-        item: `${siteUrl}/genres/${track.genre.toLowerCase().replace(/\s+/g, '-')}`,
+        item: `${siteUrl}/genres/${toSlug(track.genre)}`,
       },
       {
         '@type': 'ListItem',

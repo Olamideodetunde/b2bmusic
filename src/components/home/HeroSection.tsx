@@ -1,326 +1,231 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import {
-  ShieldCheck,
-  Film,
-  FileCheck2,
-  Layers,
-  ArrowRight,
-  Disc3,
-  AudioLines,
-  Headphones,
-  Flame,
-  Zap,
-  Radio,
-  Play,
-  Pause,
-  CheckCircle2,
-  Sparkles,
-  Globe
-} from 'lucide-react';
+import { Play, Pause, ShieldCheck, ArrowUpRight } from 'lucide-react';
+import { Track } from '@/lib/db/types';
 import { useAudio } from '../audio/GlobalAudioContext';
+import { Waveform } from '../audio/Waveform';
+import { Container, PrimaryButton, GhostButton } from './primitives';
+import { cn, formatDuration, parseMusicalKey } from '@/lib/utils';
 
-interface OverlayOption {
-  id: string;
-  name: string;
-  src: string;
-  category: string;
-  icon: React.ReactNode;
-  tagline: string;
-  projectCredit: string;
-  bpmKey: string;
-}
+// Graded to monochrome so mixed-colour concert photography reads as one set.
+const SLIDES = [
+  { src: '/banners/banner-monochrome-club.jpg', alt: 'Crowd under stage lights' },
+  { src: '/banners/banner-stage-lights.jpg', alt: 'Festival stage and audience' },
+  { src: '/banners/banner-dj-producer.jpg', alt: 'Producer performing at a DJ console' },
+];
+const SLIDE_MS = 7000;
 
-const OVERLAYS: OverlayOption[] = [
-  {
-    id: 'paris',
-    name: 'Paris Live Arena',
-    category: 'Worldwide Arena & TV Broadcast',
-    src: '/banners/banner-paris-concert.jpg',
-    icon: <Globe className="w-4 h-4" />,
-    tagline: 'Eiffel Concert Stage & Stadium Atmosphere',
-    projectCredit: 'Eiffel Nocturne · Live Drums & Cinematic Strings',
-    bpmKey: '124 BPM · G Minor',
-  },
-  {
-    id: 'dj',
-    name: 'DJ Producer',
-    category: 'Electronic & Studio Sync',
-    src: '/banners/banner-dj-producer.jpg',
-    icon: <Headphones className="w-4 h-4" />,
-    tagline: 'Pioneer DJ Console & Hardware Synthesizers',
-    projectCredit: 'Aura of Silicon · Sequential Prophet-6 Arp',
-    bpmKey: '122 BPM · D Major',
-  },
-  {
-    id: 'festival',
-    name: 'Festival Stage',
-    category: 'Stadium & Global Anthems',
-    src: '/banners/banner-festival-stage.jpg',
-    icon: <Sparkles className="w-4 h-4" />,
-    tagline: 'Monumental Live Stage & Crowd Energy',
-    projectCredit: 'Titan Stadium · Electric Guitar & Synth Anthem',
-    bpmKey: '130 BPM · E Minor',
-  },
-  {
-    id: 'fireworks',
-    name: 'Crimson Fireworks',
-    category: 'Festival & Cinematic Drama',
-    src: '/banners/banner-fireworks-magenta.jpg',
-    icon: <Flame className="w-4 h-4" />,
-    tagline: 'High-Impact Festival Night Atmosphere',
-    projectCredit: 'Ascent of Kings · Hybrid Brass & Sub-Bass',
-    bpmKey: '96 BPM · C Minor',
-  },
-  {
-    id: 'sparks',
-    name: 'Sparks Energy',
-    category: 'High-Velocity Commercials',
-    src: '/banners/banner-spark-energy.jpg',
-    icon: <Zap className="w-4 h-4" />,
-    tagline: 'Cinematic Visual Explosion & Anthems',
-    projectCredit: 'Apex Drive · Punchy 808s & Guitar Hook',
-    bpmKey: '128 BPM · A Minor',
-  },
-  {
-    id: 'energy',
-    name: 'Crimson Pulse',
-    category: 'Cyber Laser & TV Broadcast',
-    src: '/banners/banner-stage-lights.jpg',
-    icon: <Radio className="w-4 h-4" />,
-    tagline: 'Cyber Stage Lasers & Stadium Lighting',
-    projectCredit: 'Silicon Sunset · Lo-Fi Tape Waves & Chords',
-    bpmKey: '86 BPM · F Major',
-  },
+const STATS = [
+  { value: '100%', label: 'One-stop cleared' },
+  { value: '24/48', label: 'Bit / kHz WAV masters' },
+  { value: '6', label: 'Alt-mixes & cutdowns per track' },
+  { value: '$10', label: 'Perpetual license from' },
 ];
 
-export function HeroSection() {
-  const [activeOverlay, setActiveOverlay] = useState<OverlayOption>(OVERLAYS[0]);
-  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
-  const { currentTrack, isPlaying, togglePlay } = useAudio();
+function SessionCard({ tracks }: { tracks: Track[] }) {
+  const { currentTrack, isPlaying, playTrack, togglePlay, seek, currentTime, duration, setQueue } = useAudio();
+
+  const handlePlay = (track: Track) => {
+    if (currentTrack?.id === track.id) {
+      togglePlay();
+      return;
+    }
+    setQueue(tracks);
+    playTrack(track);
+  };
 
   return (
-    <section className="relative overflow-hidden pt-24 pb-20 px-4 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 w-full">
-      {/* ─── FLUID AMBIENT IMAGE BACKDROP (TONED OUT FOR NATURAL BREATHING & LUMINANCE) ─── */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        {/* Active Banner Image with Fade Transition */}
-        <img
-          key={activeOverlay.id}
-          src={activeOverlay.src}
-          alt={activeOverlay.name}
-          className="w-full h-full object-cover object-center filter brightness-[0.78] contrast-105 saturate-110 transition-all duration-1000 scale-105 animate-fade-in"
-        />
-
-        {/* Ambient Gradient Bleed: Toned out for natural breathing, clarity and photographic punch */}
-        <div className="absolute inset-0 bg-gradient-to-b from-obsidian-950/50 via-transparent to-obsidian-950/95" />
-        <div className="absolute inset-0 bg-gradient-to-r from-obsidian-950/60 via-transparent to-obsidian-950/60" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(220,38,38,0.08)_0%,transparent_75%)]" />
+    <div className="rounded-2xl border border-white/10 bg-obsidian-950/70 backdrop-blur-xl shadow-2xl shadow-black/60 overflow-hidden">
+      <div className="flex items-center justify-between px-5 h-12 border-b border-white/[0.06]">
+        <div className="flex items-center gap-2">
+          <span className={cn('w-1.5 h-1.5 rounded-full', isPlaying ? 'bg-crimson-500' : 'bg-obsidian-500')} />
+          <span className="label-xs !text-zinc-300">Now auditioning</span>
+        </div>
+        <span className="text-[11px] font-mono text-zinc-500">Brief · Q4 Product Launch</span>
       </div>
 
-      {/* Floating Ambient Glowing Energy Orbs - Softened & toned out */}
-      <div className="absolute top-20 right-1/4 w-[500px] h-[500px] rounded-full bg-crimson-600/[0.08] blur-[180px] pointer-events-none -z-0" />
-      <div className="absolute bottom-10 left-10 w-[600px] h-[600px] rounded-full bg-crimson-900/[0.08] blur-[200px] pointer-events-none -z-0" />
-
-      <div className="w-full max-w-[1600px] mx-auto relative z-10">
-        
-        {/* ─── TOP HEADLINE AREA (BOUNDLESS, EXPANSIVE) ─── */}
-        <div className="text-center max-w-4xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-mono font-bold bg-crimson-950/70 text-crimson-300 border border-crimson-600/40 mb-6 shadow-xl backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-crimson-500 animate-ping shadow-[0_0_8px_#EF4444]" />
-            <Disc3 className="w-3.5 h-3.5 text-crimson-400 animate-spin" style={{ animationDuration: '6s' }} />
-            <span>DIRECT SYNCHRONIZATION CATALOG // 24-BIT WAV</span>
-          </div>
-
-          <h1 className="font-syne text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[1.02] drop-shadow-2xl">
-            Commercial Music
-            <br />
-            <span className="text-crimson-gradient text-glow-crimson">
-              Built for Professionals.
-            </span>
-          </h1>
-
-          <p className="mt-6 text-base sm:text-lg lg:text-xl text-zinc-300 max-w-2xl mx-auto leading-relaxed font-jakarta">
-            100% pre-cleared sync licenses with isolated stems, broadcast cutdowns (:60, :30), and guaranteed cue-sheet protection. No recurring subscriptions.
-          </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
-            <Link
-              href="/#catalog"
-              className="btn-crimson text-white font-extrabold text-sm sm:text-base px-8 py-4 rounded-full flex items-center gap-2.5 shadow-2xl shadow-crimson-600/40 border border-white/20 hover:scale-105 transition-all duration-300 shine-sweep"
+      <ul>
+        {tracks.map((track, i) => {
+          const active = currentTrack?.id === track.id;
+          const dur = active && duration > 0 ? duration : track.durationSeconds;
+          const progress = active && dur > 0 ? Math.min(1, currentTime / dur) : 0;
+          const key = parseMusicalKey(track.musicalKey);
+          return (
+            <li
+              key={track.id}
+              className={cn(
+                'group grid grid-cols-[36px_minmax(0,1fr)_auto] sm:grid-cols-[36px_minmax(0,1fr)_112px_auto] items-center gap-4 px-5 py-3 border-b border-white/[0.04] last:border-0 transition-colors',
+                active ? 'bg-crimson-600/[0.08]' : 'hover:bg-white/[0.03]',
+              )}
             >
-              <AudioLines className="w-5 h-5" />
-              <span>Explore Catalog</span>
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link
-              href="/pricing"
-              className="text-sm sm:text-base font-semibold px-8 py-4 rounded-full border border-white/15 bg-white/5 backdrop-blur-xl text-zinc-100 hover:border-crimson-500/60 hover:text-white transition-all shadow-xl hover:bg-white/10"
-            >
-              Perpetual Tiers: $10 / $20 / $40
-            </Link>
-          </div>
-        </div>
-
-        {/* ─── SOUNDSTRIPE-INSPIRED INTERACTIVE OVERLAY BANNER SHOWCASE ─── */}
-        {/* A seamless, borderless interactive showcase that smoothly bleeds into the dark background */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch pt-4">
-          
-          {/* LEFT: Cinematic Hero Video/Banner Canvas (8 cols) */}
-          <div className="lg:col-span-8 relative rounded-2xl sm:rounded-3xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex flex-col justify-between p-6 sm:p-10 shadow-2xl group">
-            {/* Dynamic Banner Image with Cinematic Overlay */}
-            <div className="absolute inset-0 z-0">
-              <img
-                key={activeOverlay.id}
-                src={activeOverlay.src}
-                alt={activeOverlay.name}
-                className="w-full h-full object-cover object-center filter brightness-[0.82] contrast-110 group-hover:scale-105 transition-all duration-700 ease-out"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-obsidian-950 via-obsidian-950/30 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-r from-obsidian-950/60 via-transparent to-transparent" />
-            </div>
-
-            {/* Top Bar of Active Showcase */}
-            <div className="relative z-10 flex items-center justify-between">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-mono font-bold bg-black/60 text-white border border-white/20 backdrop-blur-md">
-                <span className="w-2 h-2 rounded-full bg-crimson-500 animate-ping" />
-                <span>OVERLAY ATMOSPHERE: {activeOverlay.name.toUpperCase()}</span>
-              </div>
-              <span className="text-xs font-mono text-zinc-300 bg-black/60 px-3 py-1 rounded-full border border-white/15 backdrop-blur-md">
-                {activeOverlay.bpmKey}
-              </span>
-            </div>
-
-            {/* Center Play Button Overlay */}
-            <div className="relative z-10 self-center my-auto">
               <button
-                onClick={() => setIsPlayingPreview(!isPlayingPreview)}
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full btn-crimson text-white flex items-center justify-center shadow-2xl shadow-crimson-600/60 hover:scale-110 transition-transform group/play border-2 border-white/30"
-                aria-label={isPlayingPreview ? 'Pause Audio Preview' : 'Play Audio Preview'}
+                onClick={() => handlePlay(track)}
+                className="relative w-9 h-9 rounded-md overflow-hidden shrink-0"
+                aria-label={active && isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
               >
-                {isPlayingPreview ? (
-                  <Pause className="w-7 h-7 fill-current animate-pulse" />
-                ) : (
-                  <Play className="w-7 h-7 fill-current ml-1" />
-                )}
+                {track.coverImageUrl && <img src={track.coverImageUrl} alt="" className="w-full h-full object-cover" />}
+                <span
+                  className={cn(
+                    'absolute inset-0 flex items-center justify-center bg-black/55 text-white transition-opacity',
+                    active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+                  )}
+                >
+                  {active && isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current ml-px" />}
+                </span>
               </button>
-            </div>
 
-            {/* Bottom Audio Info Bar & Waveform Scan */}
-            <div className="relative z-10 pt-4">
-              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-3">
-                <div>
-                  <span className="text-xs font-mono text-crimson-400 font-bold uppercase tracking-wider block">
-                    Featured Commercial Synchronization Track
-                  </span>
-                  <h3 className="font-syne text-xl sm:text-2xl font-black text-white drop-shadow-md">
-                    {activeOverlay.projectCredit}
-                  </h3>
-                </div>
+              <div className="min-w-0">
                 <Link
-                  href="/#catalog"
-                  className="text-xs font-mono text-zinc-300 hover:text-white bg-black/60 px-3.5 py-1.5 rounded-xl border border-white/15 backdrop-blur-md inline-flex items-center gap-1.5 self-start sm:self-auto hover:border-crimson-500 transition-colors"
+                  href={`/tracks/${track.slug}`}
+                  className={cn('block text-sm font-semibold tracking-tight truncate', active ? 'text-crimson-300' : 'text-white hover:text-crimson-300')}
                 >
-                  <span>License from $10</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-crimson-400" />
+                  {track.title}
                 </Link>
+                <div className="text-[11px] font-mono tabular-nums text-zinc-500 truncate mt-0.5">
+                  {track.genre} · {track.bpm} BPM · {key.camelot ?? key.short}
+                </div>
               </div>
 
-              {/* Dynamic Waveform Bar */}
-              <div className={`h-8 flex items-center gap-1 px-3 bg-black/60 rounded-xl border border-white/10 backdrop-blur-md overflow-hidden ${isPlayingPreview ? 'laser-scanner' : ''}`}>
-                {Array.from({ length: 48 }).map((_, idx) => {
-                  const h = 20 + (((idx * 13 + 7) % 75));
-                  return (
-                    <div
-                      key={idx}
-                      className={`flex-1 rounded-full transition-all ${
-                        isPlayingPreview
-                          ? 'bg-gradient-to-t from-crimson-600 to-crimson-400 bar-playing shadow-[0_0_4px_rgba(220,38,38,0.8)]'
-                          : 'bg-zinc-600/60'
-                      }`}
-                      style={{
-                        height: `${h}%`,
-                        animationDelay: isPlayingPreview ? `${(idx % 12) * 0.05}s` : '0s',
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+              <Waveform
+                seed={track.id}
+                progress={progress}
+                durationSeconds={dur}
+                isActive={active}
+                onSeek={(r) => {
+                  if (!active) handlePlay(track);
+                  seek(r * dur);
+                }}
+                bars={36}
+                className="hidden sm:flex h-6"
+              />
 
-          {/* RIGHT: Atmosphere Cases List (4 cols) — Soundstripe Interactive Style */}
-          <div className="lg:col-span-4 flex flex-col justify-center gap-3">
-            <div className="px-2 mb-1">
-              <span className="text-[11px] font-mono uppercase tracking-widest text-zinc-400 font-bold">
-                Select Overlay Mood:
+              <span className="text-xs font-mono tabular-nums text-zinc-500 w-9 text-right">
+                {formatDuration(track.durationSeconds)}
               </span>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="flex items-center justify-between px-5 h-12 border-t border-white/[0.06] text-xs">
+        <span className="inline-flex items-center gap-1.5 text-emerald-400">
+          <ShieldCheck className="w-3.5 h-3.5" />
+          All tracks one-stop cleared
+        </span>
+        <Link href="/#catalog" className="inline-flex items-center gap-1 text-zinc-400 hover:text-white transition-colors">
+          Full catalog <ArrowUpRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+export function HeroSection({ tracks }: { tracks: Track[] }) {
+  const [slide, setSlide] = useState(0);
+
+  useEffect(() => {
+    const t = setTimeout(() => setSlide(s => (s + 1) % SLIDES.length), SLIDE_MS);
+    return () => clearTimeout(t);
+  }, [slide]);
+
+  return (
+    <section className="relative -mt-16 min-h-[100svh] flex flex-col overflow-hidden">
+      {/* ─── Backdrop: slow crossfade + Ken Burns ─── */}
+      <div className="absolute inset-0" aria-hidden>
+        {SLIDES.map((s, i) => (
+          <img
+            key={s.src}
+            src={s.src}
+            alt=""
+            className={cn(
+              'absolute inset-0 w-full h-full object-cover grayscale contrast-[1.15] brightness-[0.58] transition-opacity duration-[2000ms] ease-out',
+              i === slide ? 'opacity-100 motion-safe:animate-kenburns' : 'opacity-0',
+            )}
+          />
+        ))}
+        <div className="absolute inset-0 bg-gradient-to-r from-obsidian-950 via-obsidian-950/70 to-obsidian-950/20" />
+        <div className="absolute inset-0 bg-gradient-to-t from-obsidian-950 via-transparent to-obsidian-950/60" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_75%_30%,rgba(220,38,38,0.14),transparent_55%)]" />
+      </div>
+
+      <Container className="relative flex-1 flex flex-col pt-28 lg:pt-32 pb-8">
+        <div className="flex-1 grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-14 lg:gap-16 items-center">
+          {/* ─── Copy ─── */}
+          <div>
+            <div className="enter-up flex items-center gap-3 text-[11px] font-mono uppercase tracking-[0.2em] text-zinc-400">
+              <span className="w-6 h-px bg-crimson-500" />
+              Direct sync catalog
             </div>
 
-            {OVERLAYS.map((overlay) => {
-              const isActive = activeOverlay.id === overlay.id;
+            {/* Three fixed lines, sized per breakpoint so the longest ("music, cleared") never wraps */}
+            <h1 className="mt-7 text-[2.5rem] sm:text-6xl lg:text-[3.5rem] xl:text-[4.75rem] font-bold tracking-[-0.035em] leading-[0.98] whitespace-nowrap">
+              <span className="line-mask"><span style={{ '--line-delay': '80ms' } as React.CSSProperties}>Commercial</span></span>
+              <span className="line-mask">
+                <span style={{ '--line-delay': '200ms' } as React.CSSProperties}>
+                  music, <span className="text-obsidian-300">cleared</span>
+                </span>
+              </span>
+              <span className="line-mask"><span className="text-obsidian-300" style={{ '--line-delay': '320ms' } as React.CSSProperties}>for every cut.</span></span>
+            </h1>
 
-              return (
-                <button
-                  key={overlay.id}
-                  onClick={() => setActiveOverlay(overlay)}
-                  className={`text-left p-3 sm:p-3.5 rounded-2xl transition-all duration-300 flex items-center justify-between gap-3 group border ${
-                    isActive
-                      ? 'bg-obsidian-900/95 border-crimson-500/80 text-white shadow-xl shadow-crimson-600/20 scale-[1.02] ring-1 ring-crimson-500/60'
-                      : 'bg-white/[0.02] hover:bg-white/[0.06] text-zinc-300 hover:text-white border-white/[0.06] hover:border-white/15'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    {/* Visual Banner Thumbnail */}
-                    <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden shrink-0 border border-white/15 shadow-md group-hover:border-crimson-500/50 transition-colors">
-                      <img
-                        src={overlay.src}
-                        alt={overlay.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 filter brightness-90"
-                      />
-                      <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent ${isActive ? 'ring-2 ring-crimson-500' : ''}`} />
-                      <div className={`absolute bottom-1 right-1 p-0.5 rounded-full ${isActive ? 'text-crimson-400' : 'text-zinc-300'}`}>
-                        {overlay.icon}
-                      </div>
-                    </div>
+            <p className="enter-up mt-8 max-w-lg text-base sm:text-lg text-zinc-300 leading-relaxed" style={{ '--enter-delay': '450ms' } as React.CSSProperties}>
+              Pre-cleared master recordings with isolated stems, broadcast cutdowns and cue-sheet metadata —
+              licensed per track, with no subscription.
+            </p>
 
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className={`font-syne text-sm sm:text-base font-bold truncate ${isActive ? 'text-white' : 'text-zinc-200'}`}>
-                          {overlay.name}
-                        </span>
-                        {isActive && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-crimson-500 animate-ping shrink-0" />
-                        )}
-                      </div>
-                      <div
-                        className={`text-xs truncate font-jakarta mt-0.5 ${
-                          isActive ? 'text-crimson-300 font-medium' : 'text-zinc-400'
-                        }`}
-                      >
-                        {overlay.tagline}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="shrink-0 pr-1">
-                    {isActive ? (
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-crimson-600 text-white shadow-md shadow-crimson-600/40">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                      </span>
-                    ) : (
-                      <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+            <div className="enter-up mt-10 flex flex-wrap items-center gap-3" style={{ '--enter-delay': '560ms' } as React.CSSProperties}>
+              <PrimaryButton href="/#catalog">Explore the catalog</PrimaryButton>
+              <GhostButton href="/pricing">View licensing</GhostButton>
+            </div>
           </div>
 
+          {/* ─── Product: live session card ─── */}
+          <div className="enter-up hidden md:block" style={{ '--enter-delay': '650ms' } as React.CSSProperties}>
+            <SessionCard tracks={tracks.slice(0, 4)} />
+          </div>
         </div>
 
-      </div>
+        {/* ─── Stats + slide indicator ─── */}
+        <div
+          className="enter-up mt-12 pt-6 border-t border-white/[0.08] flex flex-col lg:flex-row lg:items-end justify-between gap-8"
+          style={{ '--enter-delay': '800ms' } as React.CSSProperties}
+        >
+          <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-10 gap-y-5">
+            {STATS.map(s => (
+              <div key={s.label}>
+                <dt className="sr-only">{s.label}</dt>
+                <dd className="text-2xl font-mono font-medium tabular-nums text-white">{s.value}</dd>
+                <dd className="text-xs text-zinc-500 mt-1">{s.label}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <div className="flex items-center gap-2" role="tablist" aria-label="Background image">
+            {SLIDES.map((s, i) => (
+              <button
+                key={s.src}
+                role="tab"
+                aria-selected={i === slide}
+                aria-label={s.alt}
+                onClick={() => setSlide(i)}
+                className="relative w-10 h-5 flex items-center"
+              >
+                <span className="block w-full h-px bg-white/20 overflow-hidden">
+                  <span
+                    key={i === slide ? `active-${slide}` : 'idle'}
+                    className={cn(
+                      'block h-full bg-white origin-left',
+                      i === slide ? 'animate-progress' : 'scale-x-0',
+                    )}
+                  />
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </Container>
     </section>
   );
 }

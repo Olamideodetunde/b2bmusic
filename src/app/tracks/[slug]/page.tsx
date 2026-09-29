@@ -1,15 +1,18 @@
+import React from 'react';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import { getTrackBySlug, getAllTracks, getTracksByGenre } from '@/lib/db';
+import { getTrackBySlug, getAllTracks, getTracksByGenre, getTracksByBpmBand } from '@/lib/db';
+import { bpmBandFor } from '@/lib/catalog/taxonomy';
 import { AudioPlayer } from '@/components/audio/AudioPlayer';
 import { BadgeCluster } from '@/components/track/BadgeCluster';
 import { DescriptionBlock } from '@/components/track/DescriptionBlock';
 import { CheckoutCTA } from '@/components/track/CheckoutCTA';
 import { SchemaJsonLd } from '@/components/track/SchemaJsonLd';
-import { TrackCard } from '@/components/hub/TrackCard';
+import { TrackTable } from '@/components/hub/TrackTable';
 import Link from 'next/link';
-import { ChevronRight, Radio } from 'lucide-react';
-import { getSiteUrl } from '@/lib/utils';
+import { ChevronRight, ArrowUpRight } from 'lucide-react';
+import { Container, Eyebrow } from '@/components/home/primitives';
+import { formatDuration, getSiteUrl, parseMusicalKey, toSlug } from '@/lib/utils';
 
 interface PageProps {
   params: { slug: string };
@@ -86,131 +89,167 @@ export default async function TrackLandingPage({ params }: PageProps) {
 
   if (!track) notFound();
 
-  const relatedTracks = (await getTracksByGenre(track.genre))
-    .filter((t) => t.id !== track.id)
-    .slice(0, 3);
+  const band = bpmBandFor(track.bpm);
+
+  // Same genre first, then same tempo band — keeps every page linked into the catalog.
+  const sameGenre = (await getTracksByGenre(track.genre)).filter(t => t.id !== track.id);
+  const sameTempo = (await getTracksByBpmBand(band)).filter(t => t.id !== track.id && !sameGenre.some(g => g.id === t.id));
+  const relatedTracks = [...sameGenre, ...sameTempo].slice(0, 4);
+
+  const key = parseMusicalKey(track.musicalKey);
+  const genreHref = `/genres/${toSlug(track.genre)}`;
+
+  const stats: { value: string; label: string; href?: string }[] = [
+    { value: String(track.bpm), label: `BPM · ${band.short}`, href: `/bpm/${band.slug}` },
+    { value: key.camelot ? `${key.camelot} · ${key.short}` : key.short, label: track.musicalKey },
+    { value: formatDuration(track.durationSeconds), label: 'Duration' },
+    ...(track.altMixes.length > 0 ? [{ value: String(track.altMixes.length), label: 'Alt-mixes' }] : []),
+    ...(track.stems.length > 0 ? [{ value: String(track.stems.length), label: 'Stems' }] : []),
+  ];
+
+  const card = 'rounded-2xl border border-white/[0.08] bg-obsidian-900/30';
 
   return (
-    <div className="min-h-screen py-10 px-4 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 w-full max-w-[1700px] mx-auto text-white relative">
+    <div>
       <SchemaJsonLd track={track} siteUrl={siteUrl} />
 
-      {/* Ambient background glow */}
-      <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-crimson-600/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+      {/* ─── Track header ─── */}
+      <header className="relative overflow-hidden border-b border-white/[0.06]">
+        {/* Ambient backdrop from the track's own artwork */}
+        {track.coverImageUrl && (
+          <div className="absolute inset-0" aria-hidden>
+            <img src={track.coverImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover scale-125 blur-3xl opacity-30 saturate-[0.8]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-obsidian-950/40 via-obsidian-950/70 to-obsidian-950" />
+          </div>
+        )}
 
-      {/* Breadcrumb */}
-      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-zinc-400 mb-6 font-mono">
-        <Link href="/" className="hover:text-crimson-400 transition-colors font-medium">Catalog</Link>
-        <ChevronRight className="w-3 h-3 text-zinc-600" />
-        <Link
-          href={`/genres/${track.genre.toLowerCase().replace(/\s+/g, '-')}`}
-          className="hover:text-crimson-400 transition-colors font-medium"
-        >
-          {track.genre}
-        </Link>
-        <ChevronRight className="w-3 h-3 text-zinc-600" />
-        <span className="text-zinc-200 font-semibold truncate max-w-xs">{track.title}</span>
-      </nav>
+        <Container className="relative pt-10 pb-12 lg:pt-14 lg:pb-14">
+          <nav aria-label="Breadcrumb" className="enter-up flex items-center gap-1.5 text-[11px] font-mono text-zinc-500 mb-10">
+            <Link href="/" className="hover:text-white transition-colors">Home</Link>
+            <ChevronRight className="w-3 h-3 text-obsidian-500" />
+            <Link href={genreHref} className="hover:text-white transition-colors">{track.genre}</Link>
+            <ChevronRight className="w-3 h-3 text-obsidian-500" />
+            <span className="text-zinc-300 truncate max-w-xs">{track.title}</span>
+          </nav>
 
-      {/* Hero Header with Frosted Glass Chassis & Cover Art */}
-      <div className="relative rounded-3xl p-6 sm:p-8 glass-panel border border-white/10 mb-8 overflow-hidden shadow-2xl backdrop-blur-2xl">
-        {/* Subtle background glow element */}
-        <div className="absolute top-0 right-0 w-80 h-80 bg-crimson-600/15 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row gap-6 md:items-center">
-          {/* Cover Art Thumbnail */}
-          {track.coverImageUrl ? (
-            <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl overflow-hidden shrink-0 border border-white/20 shadow-2xl shadow-crimson-950/60 relative group ring-1 ring-white/10">
+          <div className="flex flex-col sm:flex-row gap-8 lg:gap-10 sm:items-end">
+            {track.coverImageUrl ? (
               <img
                 src={track.coverImageUrl}
-                alt={track.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                alt={`${track.title} cover artwork`}
+                width={208}
+                height={208}
+                decoding="async"
+                className="enter-up w-40 h-40 lg:w-52 lg:h-52 rounded-xl object-cover border border-white/10 shadow-2xl shadow-black/60 shrink-0"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-obsidian-950/80 via-transparent to-transparent pointer-events-none" />
-            </div>
-          ) : (
-            <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-obsidian-900 border border-white/10 flex items-center justify-center shrink-0 shadow-xl">
-              <span className="font-mono font-bold text-crimson-500 text-lg tracking-wider">HQ WAV</span>
-            </div>
-          )}
-
-          {/* Title & Metadata Details */}
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-semibold bg-crimson-950/60 text-crimson-300 border border-crimson-800/60 shadow-sm backdrop-blur-md">
-                <Radio className="w-3.5 h-3.5 animate-pulse text-crimson-400" />
-                <span>Intent: &ldquo;{track.targetKeyword}&rdquo;</span>
+            ) : (
+              <div className="w-40 h-40 lg:w-52 lg:h-52 rounded-xl bg-obsidian-900 border border-white/10 flex items-center justify-center shrink-0">
+                <span className="font-mono text-xs font-bold text-crimson-500">WAV</span>
               </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 backdrop-blur-md">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                <span>Direct Sync 100% Cleared</span>
+            )}
+
+            <div className="flex-1 min-w-0">
+              <Eyebrow className="enter-up">
+                <Link href={genreHref} className="hover:text-white transition-colors">{track.genre}</Link>
+              </Eyebrow>
+              <h1
+                className="enter-up mt-4 text-4xl sm:text-5xl lg:text-6xl font-bold tracking-[-0.03em] leading-[1.02]"
+                style={{ '--enter-delay': '80ms' } as React.CSSProperties}
+              >
+                {track.title}
+              </h1>
+              {track.syncMeta?.composer && (
+                <p className="enter-up mt-3 text-base text-zinc-400" style={{ '--enter-delay': '140ms' } as React.CSSProperties}>
+                  by <span className="text-zinc-200">{track.syncMeta.composer}</span>
+                </p>
+              )}
+              <div className="enter-up" style={{ '--enter-delay': '200ms' } as React.CSSProperties}>
+                <BadgeCluster
+                  bpm={track.bpm}
+                  musicalKey={track.musicalKey}
+                  genre={track.genre}
+                  moods={track.moods || []}
+                  proAffiliation={track.syncMeta?.proAffiliation}
+                  energyLevel={track.syncMeta?.energyLevel}
+                />
               </div>
             </div>
-
-            <h1 className="font-syne text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
-              {track.title}
-            </h1>
-            <p className="text-zinc-400 text-xs sm:text-sm mt-2 max-w-2xl leading-relaxed font-jakarta">
-              Master commercial synchronization track tailored for {(track.useCases || []).slice(0, 3).join(', ')}. Includes full stems and broadcast cutdowns.
-            </p>
-
-            <BadgeCluster
-              bpm={track.bpm}
-              musicalKey={track.musicalKey}
-              genre={track.genre}
-              moods={track.moods || []}
-            />
           </div>
-        </div>
-      </div>
 
-      {/* ─── 2-COLUMN STUDIO WORKSPACE (MUSICBED & PREMIUMBEAT STANDARD) ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* LEFT COLUMN (8 cols): Audio Deck, Deliverable Stems, Production Notes, Cue Sheet */}
-        <div className="lg:col-span-8 space-y-8">
-          {/* Interactive Waveform Audio Player Deck */}
-          <AudioPlayer track={track} />
-
-          {/* Description / Broadcast Cue Sheet / Sync Specs */}
-          <DescriptionBlock
-            description={track.description}
-            useCases={track.useCases}
-            targetKeyword={track.targetKeyword}
-            syncMeta={track.syncMeta}
-            trackTitle={track.title}
-            bpm={track.bpm}
-            musicalKey={track.musicalKey}
-          />
-
-          {/* Related Tracks */}
-          {relatedTracks.length > 0 && (
-            <section className="pt-6 border-t border-white/10">
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h3 className="font-syne text-xl font-bold text-white">More in {track.genre}</h3>
-                  <p className="text-xs text-zinc-400">Similar commercial cleared tracks for your production</p>
+          <dl
+            className="enter-up mt-10 pt-6 border-t border-white/[0.08] grid grid-cols-2 sm:flex sm:flex-wrap gap-x-12 gap-y-5"
+            style={{ '--enter-delay': '260ms' } as React.CSSProperties}
+          >
+            {stats.map(s => {
+              const content = (
+                <>
+                  <span className="block text-2xl font-mono font-medium tabular-nums text-white">{s.value}</span>
+                  <span className="block text-xs text-zinc-500 mt-1 group-hover:text-crimson-400 transition-colors">{s.label}{s.href && ' →'}</span>
+                </>
+              );
+              return (
+                <div key={s.label}>
+                  <dt className="sr-only">{s.label}</dt>
+                  <dd>{s.href ? <Link href={s.href} className="group block">{content}</Link> : content}</dd>
                 </div>
-                <Link
-                  href={`/genres/${track.genre.toLowerCase().replace(/\s+/g, '-')}`}
-                  className="text-xs font-semibold text-crimson-400 hover:text-crimson-300 transition-colors flex items-center gap-1"
-                >
-                  <span>View all {track.genre}</span>
-                  <span>&rarr;</span>
+              );
+            })}
+          </dl>
+        </Container>
+      </header>
+
+      {/* ─── Deck + details | licensing ─── */}
+      <Container className="py-10 lg:py-14">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px] gap-6 lg:gap-8 items-start">
+          <div className="min-w-0 space-y-6">
+            <div className={`${card} overflow-hidden`}>
+              <AudioPlayer track={track} />
+            </div>
+
+            <div className={`${card} overflow-hidden`}>
+              <DescriptionBlock
+                description={track.description}
+                useCases={track.useCases}
+                targetKeyword={track.targetKeyword}
+                syncMeta={track.syncMeta}
+                trackTitle={track.title}
+                bpm={track.bpm}
+                musicalKey={track.musicalKey}
+              />
+            </div>
+          </div>
+
+          <aside className="lg:sticky lg:top-24">
+            <div className={card}>
+              <CheckoutCTA track={track} layout="sidebar" />
+            </div>
+          </aside>
+        </div>
+
+        {relatedTracks.length > 0 && (
+          <section className="mt-16 lg:mt-20">
+            <div className="flex items-end justify-between gap-4 mb-6">
+              <div>
+                <Eyebrow>Keep auditioning</Eyebrow>
+                <h2 className="mt-4 text-3xl font-bold tracking-tight">
+                  {sameTempo.length === 0 ? `More in ${track.genre}` : 'Similar genre & tempo'}
+                </h2>
+              </div>
+              <div className="flex items-center gap-5">
+                <Link href={genreHref} className="group inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-white transition-colors">
+                  {track.genre} <ArrowUpRight className="w-4 h-4 transition-transform group-hover:rotate-45" />
+                </Link>
+                <Link href={`/bpm/${band.slug}`} className="group inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-white transition-colors">
+                  {band.label} <ArrowUpRight className="w-4 h-4 transition-transform group-hover:rotate-45" />
                 </Link>
               </div>
-              <div className="space-y-3">
-                {relatedTracks.map((rel) => (
-                  <TrackCard key={rel.id} track={rel} />
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-
-        {/* RIGHT COLUMN (4 cols): Sticky Licensing & Checkout Chassis */}
-        <div className="lg:col-span-4 sticky top-24 space-y-6">
-          <CheckoutCTA track={track} layout="sidebar" />
-        </div>
-      </div>
+            </div>
+            <div className={card}>
+              <TrackTable tracks={relatedTracks} className="border-y-0" />
+            </div>
+          </section>
+        )}
+      </Container>
     </div>
   );
 }

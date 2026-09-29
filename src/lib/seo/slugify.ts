@@ -1,28 +1,22 @@
+import { toSlug } from '../utils';
+
 /**
- * Cleans and converts search-intent keywords and track titles into URL-safe slugs
- * Example: "Upbeat Corporate Tech Background Music" -> "upbeat-corporate-tech-background-music"
+ * Converts a buyer search-intent keyword into a URL slug.
+ * "Upbeat Corporate Tech Background Music" → "upbeat-corporate-tech-background-music"
  */
 export function generateSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '') // remove non-alphanumeric chars
-    .replace(/[\s_-]+/g, '-') // convert spaces and underscores to hyphens
-    .replace(/^-+|-+$/g, ''); // trim leading and trailing hyphens
+  return toSlug(text).slice(0, 96).replace(/-+$/, '');
 }
 
 /**
- * Ensures slug uniqueness by checking existing database slugs and appending an increment if needed
+ * Returns `base`, or the first free `base-2`, `base-3`… given the slugs already in use.
+ * Only used when a *new* track's keyword slugifies to an existing slug — updates never
+ * change a slug, so live URLs stay stable.
  */
-export function makeUniqueSlug(candidate: string, existingSlugs: string[]): string {
-  const baseSlug = generateSlug(candidate);
-  if (!existingSlugs.includes(baseSlug)) {
-    return baseSlug;
-  }
-
-  let counter = 2;
-  while (existingSlugs.includes(`${baseSlug}-${counter}`)) {
-    counter++;
-  }
-  return `${baseSlug}-${counter}`;
+export function makeUniqueSlug(base: string, takenSlugs: string[]): string {
+  const taken = new Set(takenSlugs);
+  if (!taken.has(base)) return base;
+  let n = 2;
+  while (taken.has(`${base}-${n}`)) n++;
+  return `${base}-${n}`;
 }

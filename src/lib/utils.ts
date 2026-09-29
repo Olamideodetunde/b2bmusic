@@ -6,8 +6,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatDuration(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
+  const whole = Math.max(0, Math.floor(seconds || 0));
+  const mins = Math.floor(whole / 60);
+  const secs = whole % 60;
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
@@ -51,4 +52,68 @@ export function getSiteUrl(): string {
   } catch {
     return 'https://b2bproductionmusic.com';
   }
+}
+
+/**
+ * URL-safe slug shared by links, generateStaticParams and the sitemap, so all three agree.
+ * "Tourism & Travel Campaign" → "tourism-and-travel-campaign"; "Tech Lo-Fi" → "tech-lo-fi".
+ */
+export function toSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/[\s-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+// ── Musical key helpers (Camelot wheel) ──────────────────────
+// Major keys sit on the outer "B" ring, minor keys on the inner "A" ring.
+const CAMELOT_MAJOR: Record<string, number> = {
+  B: 1, 'F#': 2, Gb: 2, Db: 3, 'C#': 3, Ab: 4, 'G#': 4, Eb: 5, 'D#': 5, Bb: 6, 'A#': 6,
+  F: 7, C: 8, G: 9, D: 10, A: 11, E: 12,
+};
+const CAMELOT_MINOR: Record<string, number> = {
+  'G#': 1, Ab: 1, 'D#': 2, Eb: 2, Bb: 3, 'A#': 3, F: 4, C: 5, G: 6, D: 7,
+  A: 8, E: 9, B: 10, 'F#': 11, Gb: 11, 'C#': 12, Db: 12,
+};
+
+export interface KeyInfo {
+  camelot: string | null; // e.g. "8A"
+  short: string;          // e.g. "Am" / "D"
+}
+
+/** Parses "D Major" / "A Minor" / "F# minor" into Camelot code + short name. */
+export function parseMusicalKey(musicalKey: string): KeyInfo {
+  const match = musicalKey.trim().match(/^([A-Ga-g])([#b]?)\s*(major|minor|maj|min|m)?/i);
+  if (!match) return { camelot: null, short: musicalKey };
+  const root = match[1].toUpperCase() + match[2];
+  const mode = (match[3] || 'major').toLowerCase();
+  const isMinor = mode === 'minor' || mode === 'min' || mode === 'm';
+  const num = (isMinor ? CAMELOT_MINOR : CAMELOT_MAJOR)[root];
+  return {
+    camelot: num ? `${num}${isMinor ? 'A' : 'B'}` : null,
+    short: `${root}${isMinor ? 'm' : ''}`,
+  };
+}
+
+/** Rights clearance label derived from the PRO affiliation string. */
+export function rightsLabel(proAffiliation?: string): string {
+  return proAffiliation && proAffiliation.includes('100%') ? '100% One-Stop' : 'Pre-Cleared';
+}
+
+/** Summary figures for a set of tracks, used in hub page headers. */
+export function catalogStats(tracks: { bpm: number; musicalKey: string; stems?: unknown[]; altMixes?: unknown[] }[]) {
+  const bpms = tracks.map(t => t.bpm);
+  const lo = Math.min(...bpms);
+  const hi = Math.max(...bpms);
+  const keys = new Set(tracks.map(t => t.musicalKey)).size;
+  const stems = tracks.reduce((n, t) => n + (t.stems?.length ?? 0), 0);
+  return [
+    { value: String(tracks.length), label: tracks.length === 1 ? 'Track' : 'Tracks' },
+    { value: lo === hi ? String(lo) : `${lo}–${hi}`, label: 'BPM range' },
+    { value: String(keys), label: keys === 1 ? 'Musical key' : 'Musical keys' },
+    { value: String(stems), label: 'Isolated stems' },
+  ];
 }

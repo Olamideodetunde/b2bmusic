@@ -1,169 +1,198 @@
 # B2BProductionMusic.com — Programmatic Landing Page Infrastructure
 
-Fullstack programmatic music landing page architecture for **B2BProductionMusic.com**, designed and built to meet high-performance technical SEO standards, automated publishing via Make.com and Google Sheets, and instant on-demand Incremental Static Regeneration (ISR).
-
----
-
-## 1. System Architecture
+Every track in the Google Sheet master index gets its own SEO landing page, published automatically:
 
 ```
-[ Google Sheets Master Index ]
-              │
-              ▼ (New row added)
-[ Make.com Automation Scenario ]
-              │
-              ▼ (POST /api/tracks/ingest + Bearer INGESTION_API_KEY)
-┌────────────────────────────────────────────────────────┐
-│ Next.js App Router (Hosted on Vercel)                  │
-│                                                        │
-│ 1. Validate payload (Zod schema)                       │
-│ 2. Generate SEO-optimized slug (makeUniqueSlug)        │
-│ 3. Upsert record into Neon Serverless Postgres         │
-│ 4. Fire On-Demand ISR Revalidation (`revalidatePath`)  │
-│ 5. Trigger Brevo publish notification email            │
-│ 6. Return live URL for Make.com Google Sheets update   │
-└────────────────────────────────────────────────────────┘
-              │
-              ├──► [ Neon Postgres Database (Single source of truth) ]
-              │
-              ├──► [ Brevo Email API (Alerts & Purchase Receipts) ]
-              │
-              └──► [ Stripe Checkout (Instant Direct Sync Purchase) ]
+Google Sheet ──(Status = Ready)──▶ Make.com ──POST /api/tracks──▶ API ──▶ Neon (Postgres)
+     ▲                                                              │
+     └──── Status · Live URL · Track ID ◀── write-back ─────────────┤
+                                                                    ▼
+                                     Next.js ISR refreshes only that track's pages
 ```
 
+| Layer | Technology | Where |
+|---|---|---|
+| Website engine | Next.js 14 (App Router) | `src/app` |
+| Publishing | On-demand Incremental Static Regeneration | `src/lib/api/publish-handler.ts` |
+| Data entry | Google Sheets ("Track Index" tab) | sample: `fixtures/sample-track-index.csv` |
+| Database | Neon Postgres (any Postgres works, e.g. Railway) | `db/migrations`, `src/lib/db` |
+| Automation | Make.com | [docs/make-scenario.md](docs/make-scenario.md) |
+| Hosting | Vercel | — |
+| Email | Brevo (publish alerts, purchase receipts) | `src/lib/email/brevo.ts` |
+| Payments | Stripe Checkout + webhook | `src/app/api/checkout`, `src/app/api/stripe` |
+
+More docs: **[API reference](docs/api.md)** · **[Make.com scenario](docs/make-scenario.md)** · **[Production cutover](docs/cutover.md)** (upgrading the existing Neon database)
+
 ---
 
-## 2. Tech Stack
+## Quick start (local, no accounts needed)
 
-- **Framework**: Next.js 14 (App Router) + TypeScript + React
-- **Styling**: Tailwind CSS + Lucide Icons
-- **Publishing Method**: Incremental Static Regeneration (ISR) + On-demand revalidation
-- **Database**: Neon Serverless Postgres (`@neondatabase/serverless`)
-- **Automation**: Make.com webhook integration
-- **Email**: Brevo (Sendinblue) Transactional API
-- **Payments**: Stripe Checkout & Webhook handler
-- **Master Data Entry**: Google Sheets
+Requires Node 20.11+ (Node 22+ to run the test suite).
 
----
-
-## 3. Quick Start (Local Development)
-
-### 1. Install Dependencies
 ```bash
 npm install
+cp .env.example .env.local        # optional — everything has a local fallback
+npm run dev                       # http://localhost:3000
 ```
 
-### 2. Environment Variables
-Copy `.env.example` to `.env.local`:
+Without `DATABASE_URL` the app uses a local JSON store in `.data/local-db.json`, seeded with a six-track demo catalog. Delete that file to reset. Without Stripe or Brevo keys, checkout reports "not configured" and emails are logged to the console instead of sent.
+
+### Try the full publish pipeline locally
+
 ```bash
-cp .env.example .env.local
+# 1. give the API a key (also put INGESTION_API_KEY=… in .env.local, then restart `npm run dev`)
+export INGESTION_API_KEY=$(node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))")
+
+# 2. validate the sample sheet without publishing
+npm run import:sheet -- fixtures/sample-track-index.csv --dry-run
+
+# 3. publish it through the API, exactly like Make.com would
+npm run import:sheet -- fixtures/sample-track-index.csv --api http://localhost:3000
 ```
 
-Default dev values are already provided in `.env.local`. When ready for production, plug in your real Neon, Brevo, and Stripe credentials.
+Step 3 writes `fixtures/sample-track-index.results.csv` with the write-back columns (Status, Live URL, Track ID) filled in.
 
-### 3. Run Development Server
-```bash
-npm run dev
+> **Note on the sample sheet:** its Audio URL (`https://b2bmusic.vercel.app/audio/demo.mp3`) returns **HTTP 404**, so with the audio check on, every sample row is correctly rejected with *Status = Error*. Use real MP3 URLs, or set `AUDIO_URL_CHECK=false` to test with placeholders.
+
+## Scripts
+
+| Command | What it does |
+|---|---|
+| `npm run dev` / `build` / `start` | Next.js |
+| `npm test` | 28 tests: sheet parsing + the full publish rules, run against real Postgres (PGlite, using the production migrations) **and** the local store |
+| `npm run typecheck` | TypeScript |
+| `npm run db:migrate` | Applies `db/migrations/*.sql` to `DATABASE_URL`. Idempotent — run on every deploy |
+| `npm run db:seed` | Loads the demo catalog through the publish pipeline. Idempotent |
+| `npm run import:sheet -- <file.csv>` | Bulk-publish test batch / Make.com stand-in (`--dry-run`, `--api <url>`) |
+
+> Never run `npm run build` while `npm run dev` is running — both write to `.next/` and the dev server will start serving 500s with no styles. If that happens: stop the dev server, delete `.next`, and start it again.
+
+---
+
+## Publishing rules (enforced by the API)
+
+These mirror the sheet's **How to use** tab. They're implemented in `src/lib/ingest/service.ts` and covered by `tests/service.test.ts`.
+
+- **New track:** a row with no Track ID creates a page at `/tracks/<slug>`, where the slug comes from the **Target Keyword**. The API returns the Track ID and Live URL for Make.com to write back.
+- **Edit:** a row with a Track ID updates that page **in place**. The URL never changes, even if the keyword is edited, so links and rankings survive. The response includes a warning when that happens.
+- **Retries are safe:** a create that arrives without a Track ID but matches an existing track's *title + keyword* updates that track instead of duplicating it. This covers the case where a Make.com run published but failed to write back.
+- **No duplicate or doorway pages:**
+  - A second track can't target a keyword another track already owns (`409`).
+  - Descriptions must be unique and at least 60 characters (`409` / `422`).
+  - Keywords that happen to produce the same slug get `-2`, `-3`…
+- **Validation:**
+  - Genre must be one of the sheet's dropdown values.
+  - BPM must be between 40 and 250, the key must be recognisable ("A Minor", "F# Major"), and Duration must read like `2:45`.
+  - At least one mood and one use case are required.
+  - Prices must be valid.
+  - The Audio URL must actually resolve to audio (`AUDIO_URL_CHECK`).
+  - Every field error is returned at once, so a row can be fixed in one pass.
+- **Draft rows are refused (`409`).** Only *Ready* rows publish.
+- **Targeted refresh:** a publish revalidates only that track's page, its genre / use-case / BPM hubs, the home page and pricing. The nav and footer (root layout) refresh only when the set of genres changes. The sitemap is rendered per request, so it's always current.
+
+## SEO
+
+- A unique `<title>`, description, canonical URL and Open Graph tags per track, built from the track's own keyword and description.
+- Structured data: **Product** (three license Offers), **AudioObject**, **BreadcrumbList**, and **CollectionPage/ItemList** on hub pages. There is deliberately **no** `aggregateRating`: the original template shipped a hard-coded 4.9★ rating, which Google treats as fake review markup.
+- Hub pages for **genre** (`/genres/*`), **use case** (`/use-cases/*`) and **tempo** (`/bpm/under-90-bpm`, `/bpm/90-124-bpm`, `/bpm/125-plus-bpm`). Every track is linked from at least three hubs, the home catalog and the sitemap, and each track page links back to its genre and tempo hubs. No page is orphaned.
+- `/sitemap.xml` (per-track `lastmod`) and `/robots.txt` (API routes disallowed).
+- Core Web Vitals: the audio loads only on play (`preload="none"`), cover images have explicit dimensions, and list thumbnails lazy-load.
+
+---
+
+## Deployment (Vercel + Neon)
+
+The client creates the accounts (proposal §9); these are the configuration steps.
+
+### 1. Neon — staging and production
+
+1. Create a Neon project. Use the default branch as **production** and create a branch called **staging**.
+2. For each branch, copy two connection strings:
+   - **Pooled** (host contains `-pooler`): the app's `DATABASE_URL`.
+   - **Direct**: used only for migrations.
+3. Migrate both:
+   ```bash
+   DATABASE_URL="<direct connection string>" npm run db:migrate
+   ```
+4. Optional, staging only: `DATABASE_URL="<staging direct>" npm run db:seed`
+
+### 2. Vercel
+
+1. Import the repository. The framework preset is Next.js and the defaults are fine.
+2. Under **Settings → Environment Variables**, set everything in [`.env.example`](.env.example):
+   - **Production** → the Neon production branch, live Stripe keys, `NEXT_PUBLIC_SITE_URL=https://b2bproductionmusic.com`
+   - **Preview** → the Neon staging branch, Stripe **test** keys, the staging URL
+3. Use the **Pro** plan: Hobby is non-commercial only (proposal §12).
+4. Add the domain under **Settings → Domains**.
+
+### 3. Stripe
+
+1. Under **Developers → Webhooks**, add the endpoint `https://<domain>/api/stripe/webhook` with the events `checkout.session.completed` and `checkout.session.async_payment_succeeded`.
+2. Copy the signing secret into `STRIPE_WEBHOOK_SECRET`. Do this separately for test mode (staging) and live mode (production).
+
+Prices come from each track's sheet row. Checkout sessions are created server-side from the database, so the browser can never set a price. Paid orders are stored in `orders` and trigger a Brevo receipt. The receipt includes a download link when the track has a `full_audio_url` set, and otherwise says files will follow from the licensing team.
+
+### 4. Brevo
+
+1. Verify the sending domain (proposal §9).
+2. Create an API key and set `BREVO_API_KEY`, `BREVO_SENDER_EMAIL` (an address on the verified domain) and `BREVO_ADMIN_EMAIL` (who receives publish alerts).
+
+### 5. Make.com
+
+Follow **[docs/make-scenario.md](docs/make-scenario.md)**.
+
+### 6. Launch QA
+
+1. Export a batch of real rows as CSV.
+2. Dry-run it:
+   ```bash
+   npm run import:sheet -- batch.csv --dry-run
+   ```
+3. Publish it to **staging**:
+   ```bash
+   INGESTION_API_KEY=<staging key> npm run import:sheet -- batch.csv --api https://<staging-url>
+   ```
+4. Spot-check the pages, hubs and `/sitemap.xml`.
+5. Run the same batch through Make.com against production.
+6. In Google Search Console, add the domain property, submit `https://<domain>/sitemap.xml`, and watch **Pages → Indexing** for the first few weeks.
+
+---
+
+## Operations
+
+| Task | How |
+|---|---|
+| Publish a track | Fill columns A–N, leave Live URL and Track ID blank, set Status = **Ready** |
+| Edit a track | Edit the row, keep the Track ID, set Status back to **Ready** |
+| A row shows **Error** | Check the alert email (or `GET /api/publish-log`), fix the row, set **Ready** again |
+| Refresh pages without re-publishing | `POST /api/revalidate` with `{ "trackId": 12 }`, or `{ "all": true }` after a template deploy |
+| Unpublish a track | Not part of the sheet flow. Run `UPDATE tracks SET is_published = false WHERE id = 12;` in the Neon SQL editor, then `POST /api/revalidate {"all": true}` |
+| Health check / uptime monitor | `GET /api/health` |
+| Change the genre list | Update `GENRES` in `src/lib/catalog/taxonomy.ts` **and** the sheet's Genre dropdown together |
+
+### Recommended sheet tweaks
+
+- Format the **Duration** column as *Plain text*. Otherwise Sheets turns `2:45` into a time of day. The API detects and corrects this, but it adds a warning.
+- Optionally add a **Last Error** column (R) and have Make.com write the API's `errorSummary` into it, so the reason is visible next to the row.
+
+## Project layout
+
 ```
-Open [http://localhost:3000](http://localhost:3000) to view the catalog.
-
-### 4. Build for Production
-```bash
-npm run build
-npm run start
+db/migrations/           SQL migrations (schema: tracks, publish_events, orders)
+docs/                    API reference, Make.com scenario
+fixtures/                sample Google Sheet export
+scripts/                 migrate, seed, import-sheet
+src/app/                 pages (home, tracks, genres, use-cases, bpm, pricing) + API routes
+src/lib/catalog/         taxonomy: genres, statuses, tempo bands (mirrors the sheet dropdowns)
+src/lib/db/              repository interface, Postgres + local-file implementations
+src/lib/ingest/          sheet-row parsing/validation, publish service, CSV
+src/lib/licensing.ts     license tiers (Standard / Commercial / Broadcast)
+tests/                   node:test suites
 ```
 
----
+## Known limitations
 
-## 4. Google Sheets Column Mapping for Make.com
-
-Your Google Sheet should have the following headers (Row 1):
-
-| Column Name | Type | Example |
-| :--- | :--- | :--- |
-| `title` | Text | `Apex Innovation` |
-| `targetKeyword` | Text | `corporate tech innovation background music` |
-| `bpm` | Number | `124` |
-| `musicalKey` | Text | `C Major` |
-| `genre` | Text | `Corporate Pop` |
-| `moods` | Comma Text | `Inspiring, Optimistic, Forward-Thinking` |
-| `useCases` | Comma Text | `SaaS Product Demo, Investor Pitch Deck` |
-| `description` | Text | `An uplifting, modern corporate track featuring crisp delayed electric guitars...` |
-| `previewAudioUrl` | URL | `https://cdn.example.com/audio/preview-1.mp3` |
-| `coverImageUrl` | URL (Optional) | `https://images.unsplash.com/...` |
-| `standardPriceCents` | Number (Optional) | `4900` ($49.00) |
-| `broadcastPriceCents` | Number (Optional) | `19900` ($199.00) |
-| `status` | Text (Write-back) | Updated by Make.com with live URL |
-
----
-
-## 5. Make.com Scenario Configuration
-
-1. **Trigger Module**: `Google Sheets` -> *Watch Rows* (watches the master track spreadsheet).
-2. **HTTP Module**: *Make a request*:
-   - **URL**: `https://b2bproductionmusic.com/api/tracks/ingest`
-   - **Method**: `POST`
-   - **Headers**:
-     - `Content-Type`: `application/json`
-     - `Authorization`: `Bearer <YOUR_INGESTION_API_KEY>`
-   - **Body Type**: `Raw (JSON)`
-   - **Request Content**:
-     ```json
-     {
-       "title": "{{1.title}}",
-       "targetKeyword": "{{1.targetKeyword}}",
-       "bpm": {{1.bpm}},
-       "musicalKey": "{{1.musicalKey}}",
-       "genre": "{{1.genre}}",
-       "moods": "{{1.moods}}",
-       "useCases": "{{1.useCases}}",
-       "description": "{{1.description}}",
-       "previewAudioUrl": "{{1.previewAudioUrl}}",
-       "coverImageUrl": "{{1.coverImageUrl}}",
-       "standardPriceCents": {{1.standardPriceCents}},
-       "broadcastPriceCents": {{1.broadcastPriceCents}}
-     }
-     ```
-3. **Google Sheets Module**: *Update a Row*
-   - Write back `{{2.data.liveUrl}}` and `Published` into the `status` column.
-
----
-
-## 6. Testing the Ingestion API Locally
-
-Run the automated test script while your Next.js server is running:
-```bash
-node scripts/test-ingest.mjs
-```
-
----
-
-## 7. Technical SEO Features Included
-
-1. **Unique Intent Slugs**: Generated from the buyer search intent keyword with automatic duplicate avoidance (e.g. `/tracks/corporate-tech-innovation-background-music`).
-2. **Dynamic Metadata**: Title, description, and canonical tags generated per page.
-3. **Structured Data (Schema.org)**:
-   - `AudioObject` with duration, encoding format, and stream URL.
-   - `Product` with pricing tiers ($49 - $199 USD).
-   - `BreadcrumbList` for Google search hierarchy.
-4. **Hub Pages (Anti-Orphan Architecture)**:
-   - Genre hubs: `/genres/[genre]`
-   - Use-case hubs: `/use-cases/[useCase]`
-5. **Dynamic Sitemap & Robots.txt**:
-   - `/sitemap.xml` automatically includes all tracks and hubs.
-   - `/robots.txt` guides search engine crawlers.
-
----
-
-## 8. Deployment on Vercel
-
-1. Push this repository to GitHub.
-2. Import the project into Vercel.
-3. In Vercel Project Settings > **Environment Variables**, add:
-   - `DATABASE_URL` (From Neon dashboard)
-   - `INGESTION_API_KEY`
-   - `REVALIDATION_SECRET`
-   - `BREVO_API_KEY`
-   - `STRIPE_SECRET_KEY`
-   - `NEXT_PUBLIC_SITE_URL` (e.g. `https://b2bproductionmusic.com`)
-4. Deploy!
+- **Audio compression isn't automated.** The sheet's Audio URL is expected to already point at a compressed MP3 preview. The API checks that it resolves to audio, but doesn't transcode.
+- **Stems, alt-mixes and cue-sheet metadata** (composer, publisher, ISRC) are not sheet columns. The page shows them when present in the database and hides them cleanly when absent. They can be supplied as extra JSON fields (`altMixes`, `stems`, `syncMeta`) or added as sheet columns later.
+- **The local JSON store is for development only.** In production, writes without `DATABASE_URL` fail loudly (HTTP 503) rather than silently losing data.
+- **No Make.com blueprint is included.** The scenario lives in the client's account, and an untested export would be worse than precise instructions. The guide lists every module and setting.

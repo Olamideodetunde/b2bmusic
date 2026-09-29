@@ -5,7 +5,11 @@ import { AudioProvider } from "@/components/audio/GlobalAudioContext";
 import { Navbar } from "@/components/navigation/Navbar";
 import { Footer } from "@/components/navigation/Footer";
 import { MiniPlayerBar } from "@/components/audio/MiniPlayerBar";
-import { getSiteUrl } from "@/lib/utils";
+import { WorkspaceProvider } from "@/components/workspace/WorkspaceContext";
+import { StemsDrawer } from "@/components/workspace/StemsDrawer";
+import { getAllTracks } from "@/lib/db";
+import { getSiteUrl, toSlug } from "@/lib/utils";
+import { BPM_BANDS } from "@/lib/catalog/taxonomy";
 
 // ── Display / Headers: Syne ──────────────────────────────
 const syne = Syne({
@@ -83,24 +87,46 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Nav/footer links come from the live catalog, so they never point at empty hubs.
+  const tracks = await getAllTracks();
+  const genreCounts = new Map<string, number>();
+  const useCaseCounts = new Map<string, number>();
+  for (const t of tracks) {
+    genreCounts.set(t.genre, (genreCounts.get(t.genre) ?? 0) + 1);
+    for (const u of t.useCases) useCaseCounts.set(u, (useCaseCounts.get(u) ?? 0) + 1);
+  }
+  const byCount = <T,>(m: Map<T, number>) => Array.from(m.entries()).sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+  const genres = byCount(genreCounts).map(([name, count]) => ({ name, count, slug: toSlug(name) }));
+  const tempos = BPM_BANDS.filter(b => tracks.some(t => t.bpm >= b.min && t.bpm <= b.max)).map(b => ({ href: `/bpm/${b.slug}`, label: `${b.short} · ${b.label}` }));
+  const topUseCases = byCount(useCaseCounts).slice(0, 6).map(([name]) => ({ href: `/use-cases/${toSlug(name)}`, label: name }));
+
   return (
     <html
       lang="en"
       className={`dark ${syne.variable} ${jakarta.variable} ${jetbrains.variable}`}
+      suppressHydrationWarning
     >
-      <body className="bg-obsidian-950 text-zinc-100 flex flex-col min-h-screen antialiased pb-16 font-jakarta selection:bg-crimson-600/30 selection:text-white">
+      <head>
+        {/* Flags JS before first paint so scroll-reveal content never hides without it */}
+        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
+      </head>
+      {/* pb-[72px] reserves room for the fixed audio dock */}
+      <body className="min-h-screen bg-obsidian-950 text-zinc-100 flex flex-col antialiased pb-[72px] font-jakarta selection:bg-crimson-600/30 selection:text-white">
         <AudioProvider>
-          <Navbar />
-          <main className="flex-1">
-            {children}
-          </main>
-          <MiniPlayerBar />
-          <Footer />
+          <WorkspaceProvider>
+            <Navbar genres={genres} />
+            <main className="flex-1">
+              {children}
+            </main>
+            <Footer genres={genres.map(g => ({ href: `/genres/${g.slug}`, label: g.name }))} useCases={topUseCases} tempos={tempos} />
+            <MiniPlayerBar />
+            <StemsDrawer />
+          </WorkspaceProvider>
         </AudioProvider>
       </body>
     </html>

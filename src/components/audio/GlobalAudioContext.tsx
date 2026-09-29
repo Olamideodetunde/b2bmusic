@@ -3,6 +3,17 @@
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
 import { Track } from '@/lib/db/types';
 
+export type StemBus = 'Master' | 'Drums' | 'Bass' | 'Melody' | 'Other';
+
+/** Maps a StemTrack.category onto the dock's five stem buses. */
+export const STEM_BUS_CATEGORIES: Record<StemBus, string[]> = {
+  Master: ['Master'],
+  Drums: ['Drums'],
+  Bass: ['Bass'],
+  Melody: ['Synths & Guitars', 'Acoustic Elements'],
+  Other: ['FX & Risers'],
+};
+
 interface AudioContextType {
   currentTrack: Track | null;
   activeMixName: string;
@@ -18,6 +29,16 @@ interface AudioContextType {
   stopTrack: () => void;
   seek: (seconds: number) => void;
   setVolume: (vol: number) => void;
+  // ── Queue (drives Prev / Next in the dock) ──
+  queue: Track[];
+  setQueue: (tracks: Track[]) => void;
+  playNext: () => void;
+  playPrev: () => void;
+  // ── Stem monitor state (mute / solo per bus) ──
+  mutedStems: StemBus[];
+  soloStem: StemBus | null;
+  toggleStemMute: (bus: StemBus) => void;
+  toggleStemSolo: (bus: StemBus) => void;
 }
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
@@ -30,6 +51,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolumeState] = useState(0.85);
+  const [queue, setQueue] = useState<Track[]>([]);
+  const [mutedStems, setMutedStems] = useState<StemBus[]>([]);
+  const [soloStem, setSoloStem] = useState<StemBus | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -63,6 +87,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // The preview is a single bounced file, so the only audible stem control is the
+  // Master bus: muting it (or soloing another bus) silences the element. Per-bus
+  // state is kept so a multi-buffer stem engine can consume it later.
+  useEffect(() => {
+    if (!audioRef.current) return;
+    const masterSilenced = mutedStems.includes('Master') || (soloStem !== null && soloStem !== 'Master');
+    audioRef.current.muted = masterSilenced;
+  }, [mutedStems, soloStem]);
+
   const playTrack = (track: Track, customUrl?: string, mixName: string = 'Full Mix') => {
     if (!audioRef.current) return;
 
@@ -71,6 +104,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     if (currentTrack?.id === track.id && activeMixName === mixName && audioRef.current.src.includes(targetUrl)) {
       togglePlay();
       return;
+    }
+
+    if (currentTrack?.id !== track.id) {
+      setMutedStems([]);
+      setSoloStem(null);
     }
 
     setCurrentTrack(track);
@@ -136,6 +174,30 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const queueIndex = currentTrack ? queue.findIndex(t => t.id === currentTrack.id) : -1;
+
+  const playNext = () => {
+    if (queueIndex < 0 || queueIndex >= queue.length - 1) return;
+    playTrack(queue[queueIndex + 1]);
+  };
+
+  const playPrev = () => {
+    // Standard transport behaviour: first press restarts, second goes back.
+    if (currentTime > 3 || queueIndex <= 0) {
+      seek(0);
+      return;
+    }
+    playTrack(queue[queueIndex - 1]);
+  };
+
+  const toggleStemMute = (bus: StemBus) => {
+    setMutedStems(prev => (prev.includes(bus) ? prev.filter(b => b !== bus) : [...prev, bus]));
+  };
+
+  const toggleStemSolo = (bus: StemBus) => {
+    setSoloStem(prev => (prev === bus ? null : bus));
+  };
+
   return (
     <AudioContext.Provider
       value={{
@@ -153,6 +215,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         stopTrack,
         seek,
         setVolume,
+        queue,
+        setQueue,
+        playNext,
+        playPrev,
+        mutedStems,
+        soloStem,
+        toggleStemMute,
+        toggleStemSolo,
       }}
     >
       {children}

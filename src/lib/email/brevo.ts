@@ -1,5 +1,9 @@
 /**
- * Brevo (formerly Sendinblue) Transactional Email Client
+ * Brevo transactional email: purchase confirmations and publish alerts.
+ *
+ * Env: BREVO_API_KEY, BREVO_SENDER_EMAIL (must be on the Brevo-verified domain),
+ *      BREVO_SENDER_NAME, BREVO_ADMIN_EMAIL (who receives publish alerts; BREVO_ALERT_EMAIL also works).
+ * Without BREVO_API_KEY, emails are logged instead of sent (local development).
  */
 
 interface SendEmailParams {
@@ -8,95 +12,135 @@ interface SendEmailParams {
   htmlContent: string;
 }
 
-export async function sendTransactionalEmail({ to, subject, htmlContent }: SendEmailParams) {
+export type SendResult = { success: true; mocked?: boolean } | { success: false; error: string };
+
+/** Everything interpolated into email HTML comes from the sheet or Stripe — escape it. */
+export function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+export async function sendTransactionalEmail({ to, subject, htmlContent }: SendEmailParams): Promise<SendResult> {
   const apiKey = process.env.BREVO_API_KEY;
-  const senderEmail = process.env.BREVO_SENDER_EMAIL || "licensing@b2bproductionmusic.com";
-  const senderName = process.env.BREVO_SENDER_NAME || "B2B Production Music";
+  const senderEmail = process.env.BREVO_SENDER_EMAIL || 'licensing@b2bproductionmusic.com';
+  const senderName = process.env.BREVO_SENDER_NAME || 'B2B Production Music';
 
   if (!apiKey) {
-    console.log(`[Brevo Mock Email] To: ${to.map(t => t.email).join(', ')} | Subject: ${subject}`);
+    console.log(`[brevo:mock] to=${to.map(t => t.email).join(',')} subject="${subject}"`);
     return { success: true, mocked: true };
   }
 
   try {
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": apiKey,
-        "Accept": "application/json"
-      },
-      body: JSON.stringify({
-        sender: { name: senderName, email: senderEmail },
-        to,
-        subject,
-        htmlContent
-      })
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'api-key': apiKey, Accept: 'application/json' },
+      body: JSON.stringify({ sender: { name: senderName, email: senderEmail }, to, subject, htmlContent }),
+      // Never let a slow email provider stall a Make.com run or a Stripe webhook.
+      signal: AbortSignal.timeout(8000),
     });
-
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[Brevo Error]:", errorText);
-      return { success: false, error: errorText };
+      const error = await response.text();
+      console.error('[brevo] send failed:', response.status, error);
+      return { success: false, error: `HTTP ${response.status}` };
     }
-
-    const data = await response.json();
-    return { success: true, data };
+    return { success: true };
   } catch (err: any) {
-    console.error("[Brevo Request Failed]:", err);
-    return { success: false, error: err.message };
+    console.error('[brevo] request failed:', err?.message);
+    return { success: false, error: err?.message ?? 'request failed' };
   }
 }
 
-/**
- * Send alert when a new track is ingested and published automatically
- */
-export async function sendPublishAlertEmail(trackTitle: string, slug: string, liveUrl: string) {
-  const adminEmail = process.env.BREVO_ADMIN_EMAIL || "admin@b2bproductionmusic.com";
-  
-  const htmlContent = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #0d0d14; color: #ffffff; border: 1px solid #222; border-radius: 12px;">
-      <h2 style="color: #ef4444; margin-top: 0;">🚀 New Track Published Programmatically</h2>
-      <p style="color: #d1d5db;">A new track has been ingested from Google Sheets / Make.com and published live with Next.js ISR.</p>
-      <table style="width: 100%; border-collapse: collapse; margin-top: 15px; color: #ffffff;">
-        <tr><td style="padding: 10px; font-weight: bold; width: 140px; border-bottom: 1px solid #222; color: #9ca3af;">Track Title:</td><td style="padding: 10px; border-bottom: 1px solid #222;"><strong>${trackTitle}</strong></td></tr>
-        <tr><td style="padding: 10px; font-weight: bold; border-bottom: 1px solid #222; color: #9ca3af;">Slug:</td><td style="padding: 10px; border-bottom: 1px solid #222;"><code style="color: #ef4444;">${slug}</code></td></tr>
-        <tr><td style="padding: 10px; font-weight: bold; color: #9ca3af;">Live URL:</td><td style="padding: 10px;"><a href="${liveUrl}" style="color: #ef4444; text-decoration: underline;">${liveUrl}</a></td></tr>
-      </table>
-      <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #222; font-size: 12px; color: #6b7280;">
-        B2BProductionMusic.com · Programmatic Landing Page Infrastructure
-      </div>
-    </div>
-  `;
+// ─── Templates ──────────────────────────────────────────────────────
 
+function layout(heading: string, body: string) {
+  return `
+  <div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;padding:28px;background:#0b0b0f;color:#f8fafc;border:1px solid #1e1e2b;border-radius:12px">
+    <div style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#71718a;margin-bottom:18px">B2B Production Music</div>
+    <h2 style="margin:0 0 16px;font-size:20px;color:#ffffff">${heading}</h2>
+    ${body}
+    <div style="margin-top:28px;padding-top:14px;border-top:1px solid #1e1e2b;font-size:12px;color:#71718a">
+      B2BProductionMusic.com · Direct sync licensing
+    </div>
+  </div>`;
+}
+
+function rows(items: [string, string][]) {
+  return `<table style="width:100%;border-collapse:collapse;font-size:14px">${items
+    .map(([k, v]) => `<tr><td style="padding:9px 0;color:#a1a1ba;width:140px;border-bottom:1px solid #1e1e2b">${k}</td><td style="padding:9px 0;border-bottom:1px solid #1e1e2b;color:#ffffff">${v}</td></tr>`)
+    .join('')}</table>`;
+}
+
+function alertRecipient() {
+  const email = process.env.BREVO_ADMIN_EMAIL || process.env.BREVO_ALERT_EMAIL;
+  return email ? [{ email, name: 'Catalog Admin' }] : null;
+}
+
+/** Sent after every successful create/update from the sheet. */
+export async function sendPublishAlertEmail(p: { title: string; slug: string; liveUrl: string; action: 'created' | 'updated'; trackId: number; warnings: string[] }) {
+  const to = alertRecipient();
+  if (!to) return { success: true, mocked: true } as SendResult;
+  const warnings = p.warnings.length
+    ? `<p style="margin:16px 0 0;color:#fbbf24;font-size:13px"><strong>Check:</strong><br>${p.warnings.map(escapeHtml).join('<br>')}</p>`
+    : '';
   return sendTransactionalEmail({
-    to: [{ email: adminEmail, name: "Catalog Admin" }],
-    subject: `[Published] ${trackTitle} is now live on B2BProductionMusic.com`,
-    htmlContent
+    to,
+    subject: `[${p.action === 'created' ? 'Published' : 'Updated'}] ${p.title}`,
+    htmlContent: layout(
+      p.action === 'created' ? 'New track published' : 'Track updated',
+      rows([
+        ['Track', `<strong>${escapeHtml(p.title)}</strong>`],
+        ['Track ID', escapeHtml(p.trackId)],
+        ['URL', `<a href="${escapeHtml(p.liveUrl)}" style="color:#f87171">${escapeHtml(p.liveUrl)}</a>`],
+      ]) + warnings,
+    ),
   });
 }
 
-/**
- * Send purchase confirmation & license certificate
- */
-export async function sendPurchaseReceiptEmail(customerEmail: string, trackTitle: string, licenseTier: string, downloadUrl: string) {
-  const htmlContent = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #0d0d14; color: #ffffff; border: 1px solid #222; border-radius: 12px;">
-      <h2 style="color: #ef4444; margin-top: 0;">🎉 Commercial Music License Confirmed</h2>
-      <p style="color: #d1d5db;">Thank you for licensing commercial audio from <strong>B2BProductionMusic.com</strong>.</p>
-      <div style="background-color: #14141f; padding: 18px; border-radius: 8px; margin: 20px 0; border: 1px solid #2d2d3d;">
-        <p style="margin: 0 0 10px 0; color: #ffffff;"><strong>Track:</strong> ${trackTitle}</p>
-        <p style="margin: 0 0 10px 0; color: #ef4444;"><strong>License Tier:</strong> ${licenseTier}</p>
-        <p style="margin: 0; color: #9ca3af; font-size: 13px;"><strong>Rights Granted:</strong> 100% Pre-Cleared Worldwide Perpetual Synchronization with automatic YouTube Content ID whitelisting.</p>
-      </div>
-      <a href="${downloadUrl}" style="display: inline-block; background-color: #dc2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 10px;">Download Master Audio & Stems</a>
-      <p style="margin-top: 25px; font-size: 12px; color: #6b7280;">Need an official cue sheet or custom sync indemnification agreement? Reply directly to this email.</p>
-    </div>
-  `;
-
+/** Sent when the API rejects a row, so a failure is visible even if Make.com's write-back fails. */
+export async function sendPublishFailureEmail(p: { title: string; errorSummary: string }) {
+  const to = alertRecipient();
+  if (!to || process.env.BREVO_ALERT_ON_ERROR === 'false') return { success: true, mocked: true } as SendResult;
   return sendTransactionalEmail({
-    to: [{ email: customerEmail }],
-    subject: `Your Commercial License: ${trackTitle} (B2BProductionMusic.com)`,
-    htmlContent
+    to,
+    subject: `[Publish error] ${p.title || 'Untitled row'}`,
+    htmlContent: layout(
+      'A sheet row could not be published',
+      rows([['Track', escapeHtml(p.title || '—')], ['Problem', escapeHtml(p.errorSummary)]]) +
+        '<p style="margin:16px 0 0;color:#a1a1ba;font-size:13px">Fix the row in the Google Sheet and set Status back to <strong>Ready</strong>.</p>',
+    ),
+  });
+}
+
+/** Purchase confirmation + license summary, sent from the Stripe webhook. */
+export async function sendPurchaseReceiptEmail(p: {
+  customerEmail: string;
+  trackTitle: string;
+  tierName: string;
+  amount: string;
+  trackUrl: string;
+  downloadUrl?: string;
+  orderRef: string;
+}) {
+  const download = p.downloadUrl
+    ? `<a href="${escapeHtml(p.downloadUrl)}" style="display:inline-block;margin-top:20px;background:#dc2626;color:#ffffff;padding:12px 22px;text-decoration:none;border-radius:999px;font-weight:bold">Download licensed audio</a>`
+    : `<p style="margin:20px 0 0;color:#a1a1ba;font-size:13px">Your licensed files will follow in a separate email from our licensing team.</p>`;
+  return sendTransactionalEmail({
+    to: [{ email: p.customerEmail }],
+    subject: `Your license: ${p.trackTitle} (${p.tierName})`,
+    htmlContent: layout(
+      'License confirmed',
+      rows([
+        ['Track', `<a href="${escapeHtml(p.trackUrl)}" style="color:#f87171">${escapeHtml(p.trackTitle)}</a>`],
+        ['License', escapeHtml(p.tierName)],
+        ['Amount', escapeHtml(p.amount)],
+        ['Order ref', `<code>${escapeHtml(p.orderRef)}</code>`],
+      ]) +
+        '<p style="margin:16px 0 0;color:#a1a1ba;font-size:13px">Perpetual, worldwide synchronization license for one project, 100% pre-cleared (master and publishing), with YouTube Content ID whitelisting.</p>' +
+        download,
+    ),
   });
 }
