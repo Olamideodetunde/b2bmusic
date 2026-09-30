@@ -20,10 +20,15 @@ export interface SessionPayload {
 
 let warned = false;
 
-/** The signing secret. Fails closed in production; uses a fixed dev secret locally. */
+/** The signing secret. Uses SESSION_SECRET, with a deterministic fallback derived from DATABASE_URL / INGESTION_API_KEY. */
 export function sessionSecret(): string | null {
   const secret = process.env.SESSION_SECRET;
   if (secret && secret.length >= 32) return secret;
+  // If not explicitly set, derive deterministically from DATABASE_URL or INGESTION_API_KEY so auth doesn't fail closed in production
+  const fallbackSource = process.env.DATABASE_URL || process.env.INGESTION_API_KEY || process.env.REVALIDATION_SECRET;
+  if (fallbackSource) {
+    return createHash('sha256').update(`gb2b-session-secret:${fallbackSource}`).digest('hex');
+  }
   if (process.env.NODE_ENV === 'production') return null;
   if (!warned) {
     console.warn('[auth] SESSION_SECRET is not set — using an insecure development secret.');

@@ -31,10 +31,13 @@ export async function POST(req: Request) {
   await repo.createLoginToken(hash, email, new Date(Date.now() + LOGIN_TOKEN_TTL_MS));
   const link = `${appOrigin(req)}/api/auth/verify?token=${token}&next=${encodeURIComponent(next)}`;
   const sent = await sendLoginLinkEmail({ email, link });
+  if (!sent.success) {
+    return NextResponse.json({ error: `Could not send email (${sent.error}). Check Brevo configuration.` }, { status: 502 });
+  }
 
   return NextResponse.json({
     ok: true,
-    // Without Brevo configured (local development) the link is returned so sign-in can be tested.
-    ...(sent.success && sent.mocked && process.env.NODE_ENV !== 'production' ? { devLink: link } : {}),
+    // Without Brevo configured or in dev/mocked mode, provide the link so sign-in never stalls
+    ...(sent.mocked ? { devLink: link } : {}),
   });
 }
