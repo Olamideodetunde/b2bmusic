@@ -1,4 +1,4 @@
-import type { Order, PublishEvent, Track, TrackInput } from './types';
+import type { DownloadVia, MasterFormat, Order, PublishEvent, Subscription, Track, TrackInput, User } from './types';
 
 /**
  * Storage contract. Business rules (validation, slugs, duplicate handling) live in
@@ -40,6 +40,31 @@ export interface TrackRepository {
   createOrder(order: Omit<Order, 'id' | 'createdAt' | 'status'>): Promise<boolean>;
   /** Marks a paid order refunded. Returns false if there is no such order or it was already refunded. */
   markOrderRefunded(stripeSessionId: string): Promise<boolean>;
+  /** Track IDs this email has a paid (not refunded) license for. */
+  purchasedTrackIds(email: string): Promise<number[]>;
+
+  // ── Accounts ──
+  findUserById(id: number): Promise<User | null>;
+  findUserByEmail(email: string): Promise<User | null>;
+  findUserByStripeCustomer(customerId: string): Promise<User | null>;
+  /** Creates the user if needed; links the Stripe customer when given. Emails match case-insensitively. */
+  upsertUser(email: string, stripeCustomerId?: string | null): Promise<User>;
+  touchLogin(userId: number): Promise<void>;
+
+  /** Insert or replace a subscription by its Stripe id (the webhook re-reads Stripe, so last write wins). */
+  upsertSubscription(sub: Subscription): Promise<void>;
+  listSubscriptions(userId: number): Promise<Subscription[]>;
+
+  // ── Magic-link tokens (only hashes are stored) ──
+  createLoginToken(tokenHash: string, email: string, expiresAt: Date): Promise<void>;
+  /** Marks the token used and returns its email — or null if unknown, expired or already used. */
+  consumeLoginToken(tokenHash: string): Promise<string | null>;
+  /** How many links were requested for this email since `since` (rate limiting). */
+  countLoginTokensSince(email: string, since: Date): Promise<number>;
+
+  // ── Downloads ──
+  logDownload(d: { userId: number | null; email: string | null; trackId: number; format: MasterFormat; via: DownloadVia }): Promise<void>;
+  countDownloadsSince(userId: number, since: Date): Promise<number>;
 }
 
 export class SlugConflictError extends Error {

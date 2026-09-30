@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useEffect, useState, Suspense } from 'react';
-import { CheckCircle2, Lock, ArrowRight, Loader2, ShieldCheck, Zap, Globe, Tv, Check, AlertTriangle, FlaskConical } from 'lucide-react';
+import { CheckCircle2, Lock, ArrowRight, Loader2, ShieldCheck, Zap, Globe, Tv, Check, AlertTriangle, FlaskConical, Download, Infinity as InfinityIcon } from 'lucide-react';
 import { Track } from '@/lib/db/types';
 import { formatPrice } from '@/lib/utils';
 import { LICENSE_TIERS, tierPriceCents, type LicenseTierKey } from '@/lib/licensing';
 import { mailto } from '@/lib/brand';
+import { useAuth } from '@/components/auth/AuthContext';
+import { formatPlan } from '@/lib/plan';
 
 interface CheckoutCTAProps {
   track: Track;
@@ -32,6 +34,8 @@ function CheckoutCTAContent({ track, className = '' }: CheckoutCTAProps) {
   const [error, setError] = useState<string | null>(null);
   const [demo, setDemo] = useState(false);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const { me, loading: authLoading, accessFor, openUnlock, download, refresh, subscribe } = useAuth();
+  const access = accessFor(track.id);
 
   // Returning from Stripe: confirm with the server rather than trusting the URL.
   useEffect(() => {
@@ -44,8 +48,12 @@ function CheckoutCTAContent({ track, className = '' }: CheckoutCTAProps) {
     setConfirmation({ state: 'checking' });
     fetch(`/api/checkout/session?session_id=${encodeURIComponent(sessionId)}`)
       .then(r => r.json())
-      .then(d => setConfirmation(d.paid ? { state: 'paid', tierName: d.tierName, email: d.email } : { state: 'unverified' }))
+      .then(d => {
+        setConfirmation(d.paid ? { state: 'paid', tierName: d.tierName, email: d.email } : { state: 'unverified' });
+        if (d.paid) refresh();
+      })
       .catch(() => setConfirmation({ state: 'unverified' }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCheckout = async () => {
@@ -62,6 +70,12 @@ function CheckoutCTAContent({ track, className = '' }: CheckoutCTAProps) {
         window.location.href = data.url;
         return;
       }
+      if (res.status === 409 && data.access) {
+        // Already covered (subscription or earlier purchase): show Download instead of charging again.
+        await refresh();
+        setLoading(false);
+        return;
+      }
       if (data.demo) setDemo(true);
       else setError(data.error ?? 'Checkout is unavailable right now — please try again or contact licensing.');
     } catch {
@@ -74,6 +88,39 @@ function CheckoutCTAContent({ track, className = '' }: CheckoutCTAProps) {
     return (
       <div className={`p-5 flex items-center gap-2 text-sm text-slate-400 ${className}`}>
         <Loader2 className="w-4 h-4 animate-spin" /> Confirming your purchase…
+      </div>
+    );
+  }
+
+  if (access) {
+    return (
+      <div className={`p-5 ${className}`}>
+        <div className="flex items-center gap-2 text-emerald-400">
+          <CheckCircle2 className="w-4 h-4" />
+          <span className="label-xs !text-emerald-400">{access === 'subscription' ? 'Included in your subscription' : 'You own a license'}</span>
+        </div>
+        <h3 className="text-lg font-bold tracking-tight mt-3">
+          {confirmation?.state === 'paid' ? 'Thank you — you’re licensed.' : 'Ready to download'}
+        </h3>
+        <p className="text-sm text-slate-400 mt-2 leading-relaxed">
+          {access === 'subscription'
+            ? <>Your all-access plan covers <span className="text-slate-200">&ldquo;{track.title}&rdquo;</span> — download the full-quality master, no extra charge.</>
+            : <>Your license for <span className="text-slate-200">&ldquo;{track.title}&rdquo;</span> is active{confirmation?.state === 'paid' && confirmation.email ? <> and a receipt was sent to <span className="font-mono text-slate-300">{confirmation.email}</span></> : null}.</>}
+        </p>
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          {(['wav', 'aiff'] as const).map(fmt => (
+            <button
+              key={fmt}
+              onClick={() => download(track, fmt)}
+              className={`h-11 rounded-full text-sm font-semibold inline-flex items-center justify-center gap-2 transition-colors ${
+                fmt === 'wav' ? 'bg-brand-600 hover:bg-brand-500 text-white' : 'border border-white/15 text-slate-200 hover:text-white hover:border-white/30'
+              }`}
+            >
+              <Download className="w-4 h-4" /> {fmt.toUpperCase()}
+            </button>
+          ))}
+        </div>
+        <p className="mt-3 text-[11px] text-slate-500">24-bit master · download links are generated on demand and expire after a minute.</p>
       </div>
     );
   }
@@ -96,7 +143,7 @@ function CheckoutCTAContent({ track, className = '' }: CheckoutCTAProps) {
   }
 
   return (
-    <div className={`p-5 ${className}`}>
+    <div id="license" className={`p-5 scroll-mt-24 ${className}`}>
       {confirmation?.state === 'unverified' && (
         <div className="mb-4 flex gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
           <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -111,7 +158,7 @@ function CheckoutCTAContent({ track, className = '' }: CheckoutCTAProps) {
           100% Pre-cleared
         </span>
       </div>
-      <p className="text-xs text-slate-500 mt-1">Perpetual license · no subscription</p>
+      <p className="text-xs text-slate-500 mt-1">Perpetual license for this track · one-time payment</p>
 
       {/* Tier radio list */}
       <div className="mt-4 border border-white/[0.08] rounded-lg divide-y divide-white/[0.06] overflow-hidden" role="radiogroup" aria-label="License tier">
@@ -161,8 +208,15 @@ function CheckoutCTAContent({ track, className = '' }: CheckoutCTAProps) {
 
       {/* CTA */}
       <button
-        onClick={handleCheckout}
-        disabled={loading}
+        onClick={() => {
+          if (!me.user && me.plan) {
+            const tier = LICENSE_TIERS.find(t => t.key === selectedTier)!;
+            openUnlock(track, { onBuySingle: handleCheckout, singleLabel: `${tier.name} · ${formatPrice(tierPriceCents(track, selectedTier))}` });
+          } else {
+            handleCheckout();
+          }
+        }}
+        disabled={loading || authLoading}
         className="mt-5 w-full h-11 rounded-full bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-sm font-semibold inline-flex items-center justify-center gap-2 transition-colors"
       >
         {loading ? (
@@ -189,6 +243,16 @@ function CheckoutCTAContent({ track, className = '' }: CheckoutCTAProps) {
           <FlaskConical className="w-3.5 h-3.5 shrink-0 mt-px text-slate-300" />
           Demo mode: Stripe isn&apos;t configured on this environment, so no payment was taken. Add STRIPE_SECRET_KEY to enable checkout.
         </p>
+      )}
+
+      {me.plan && !me.isSubscribed && (
+        <button
+          onClick={subscribe}
+          className="mt-3 w-full flex items-center justify-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
+        >
+          <InfinityIcon className="w-3.5 h-3.5 text-brand-400" />
+          Or unlock the whole catalog · <span className="font-mono text-slate-200">{formatPlan(me.plan)}</span>
+        </button>
       )}
 
       {/* Trust */}

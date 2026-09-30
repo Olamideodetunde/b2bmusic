@@ -29,7 +29,7 @@ const nextConfig = {
       },
       {
         // API responses must never be cached by browsers or shared caches (except /api/catalog, which sets its own).
-        source: '/api/(tracks|track-pages|revalidate|publish-log|checkout|stripe|webhooks)/:path*',
+        source: '/api/(tracks|track-pages|revalidate|publish-log|checkout|stripe|webhooks|auth|me|download|subscribe|billing-portal)/:path*',
         headers: [{ key: 'Cache-Control', value: 'no-store' }],
       },
     ];

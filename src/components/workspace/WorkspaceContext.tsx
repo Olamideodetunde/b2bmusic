@@ -5,8 +5,9 @@ import { Track } from '@/lib/db/types';
 
 const PROJECT_STORAGE_KEY = 'b2b.project-bin';
 
-export type DownloadFormat = 'WAV' | 'AIFF' | 'MP3';
-export const DOWNLOAD_FORMATS: DownloadFormat[] = ['WAV', 'AIFF', 'MP3'];
+/** Licensed downloads are the full-quality masters. (The MP3 is only the watermarked preview.) */
+export type DownloadFormat = 'WAV' | 'AIFF';
+export const DOWNLOAD_FORMATS: DownloadFormat[] = ['WAV', 'AIFF'];
 
 interface WorkspaceContextType {
   // Project bin — tracks shortlisted for the current production

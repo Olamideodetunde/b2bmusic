@@ -50,8 +50,15 @@ export interface Track {
   publishedAt: string;
   updatedAt: string;
 
-  // ── Optional enrichment ──
+  // ── Protected masters (server-only; stripped before anything reaches the browser) ──
+  /** Object key of the full-quality WAV in the private masters bucket. */
+  masterWavKey?: string;
+  /** Object key of the AIFF master, if one exists. */
+  masterAiffKey?: string;
+  /** Legacy: a direct URL to the full file. Prefer masterWavKey. */
   fullAudioUrl?: string;
+
+  // ── Optional enrichment ──
   vocalType?: 'instrumental' | 'female' | 'male';
   stripeProductId?: string;
   altMixes: AltMix[];
@@ -76,6 +83,8 @@ export interface TrackInput {
   commercialPriceCents: number;
   broadcastPriceCents: number;
   fullAudioUrl?: string;
+  masterWavKey?: string;
+  masterAiffKey?: string;
   vocalType?: Track['vocalType'];
   altMixes?: AltMix[];
   stems?: StemTrack[];
@@ -102,3 +111,23 @@ export interface Order {
   status: 'paid' | 'refunded';
   createdAt: string;
 }
+
+export interface User {
+  id: number;
+  email: string;
+  stripeCustomerId: string | null;
+  createdAt: string;
+}
+
+export interface Subscription {
+  stripeSubscriptionId: string;
+  userId: number;
+  /** Stripe's status: active, trialing, past_due, canceled, unpaid, incomplete, … */
+  status: string;
+  priceId: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+}
+
+export type DownloadVia = 'subscription' | 'purchase' | 'receipt';
+export type MasterFormat = 'wav' | 'aiff';

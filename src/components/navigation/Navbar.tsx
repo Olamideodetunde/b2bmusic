@@ -9,6 +9,7 @@ import { useWorkspace } from '@/components/workspace/WorkspaceContext';
 import { useAudio } from '@/components/audio/GlobalAudioContext';
 import { formatDuration } from '@/lib/utils';
 import { Logo } from '@/components/brand/Logo';
+import { AccountMenu } from '@/components/auth/AccountMenu';
 import { BRAND } from '@/lib/brand';
 import { CoverImage } from '@/components/ui/CoverImage';
 
@@ -155,8 +156,9 @@ export function Navbar({ genres }: { genres: NavGenre[] }) {
         {/* ── Desktop Nav ── */}
         <nav className="hidden md:flex items-center gap-5 xl:gap-7 whitespace-nowrap text-xs font-semibold uppercase tracking-wider font-mono text-slate-400">
           <Link href="/#catalog" className="hover:text-white transition-colors">Catalog</Link>
-          {NAV_LINKS.map(link => (
-            <Link key={link.href} href={link.href} className={linkClass(link.href)}>{link.label}</Link>
+          {NAV_LINKS.map((link, i) => (
+            // The 3rd/4th genres only fit next to the account controls on wide screens.
+            <Link key={link.href} href={link.href} className={`${linkClass(link.href)} ${i >= 2 ? 'hidden xl:inline' : ''}`}>{link.label}</Link>
           ))}
           <Link href="/pricing" className={`font-bold ${pathname === '/pricing' ? 'text-white' : 'text-brand-400 hover:text-white'} transition-colors`}>
             Pricing ($10+)
@@ -170,14 +172,17 @@ export function Navbar({ genres }: { genres: NavGenre[] }) {
             <span>100% Pre-Cleared</span>
           </div>
 
-          {/* On phones the bin moves into the menu so the logo lockup fits at 375px */}
+          {/* On phones the bin and account move into the menu so the logo lockup fits at 375px */}
           <div className="hidden sm:block">
             <ProjectBin />
+          </div>
+          <div className="hidden sm:block">
+            <AccountMenu />
           </div>
 
           <Link
             href="/#catalog"
-            className="hidden sm:inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-bold px-4 h-8 rounded-full btn-primary text-white"
+            className="hidden xl:inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-bold px-4 h-8 rounded-full btn-primary text-white"
           >
             <Search className="w-3.5 h-3.5" />
             <span>Search Catalog</span>
@@ -201,6 +206,10 @@ export function Navbar({ genres }: { genres: NavGenre[] }) {
           <div className="sm:hidden flex items-center justify-between mb-3 pb-3 border-b border-white/[0.06]">
             <span className="label-xs">Project bin</span>
             <ProjectBin />
+          </div>
+          <div className="sm:hidden flex items-center justify-between mb-3 pb-3 border-b border-white/[0.06]">
+            <span className="label-xs">Account</span>
+            <AccountMenu />
           </div>
           <div className="grid grid-cols-2 gap-1.5 text-sm font-medium">
             {[{ href: '/#catalog', label: 'All Tracks' }, ...NAV_LINKS, { href: '/pricing', label: 'Pricing ($10+)' }].map(link => (

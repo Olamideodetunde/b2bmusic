@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { Order, PublishEvent, Track, TrackInput } from './types';
+import type { DownloadVia, MasterFormat, Order, PublishEvent, Subscription, Track, TrackInput, User } from './types';
 import { SlugConflictError, StorageNotConfiguredError, type TrackRepository } from './repository';
 import { initialTracks } from './mock-data';
 
@@ -16,6 +16,10 @@ interface StoreShape {
   tracks: Track[];
   events: (PublishEvent & { payload?: unknown })[];
   orders: Order[];
+  users?: (User & { lastLoginAt?: string })[];
+  subscriptions?: Subscription[];
+  loginTokens?: { tokenHash: string; email: string; expiresAt: string; usedAt: string | null; createdAt: string }[];
+  downloads?: { userId: number | null; email: string | null; trackId: number; format: MasterFormat; via: DownloadVia; createdAt: string }[];
 }
 
 // Override with LOCAL_DB_PATH (the test suite points this at a temp file).
@@ -131,6 +135,8 @@ export class FileRepository implements TrackRepository {
       stems: input.stems ?? prev.stems,
       syncMeta: input.syncMeta ?? prev.syncMeta,
       fullAudioUrl: input.fullAudioUrl ?? prev.fullAudioUrl,
+      masterWavKey: input.masterWavKey ?? prev.masterWavKey,
+      masterAiffKey: input.masterAiffKey ?? prev.masterAiffKey,
       vocalType: input.vocalType ?? prev.vocalType,
       id: prev.id,
       slug: prev.slug, // the live URL never changes
@@ -172,4 +178,114 @@ export class FileRepository implements TrackRepository {
     await save(store);
     return true;
   }
+
+  async purchasedTrackIds(email: string) {
+    const e = email.trim().toLowerCase();
+    const ids = (await load()).orders.filter(o => o.status === 'paid' && o.customerEmail?.toLowerCase() === e).map(o => o.trackId);
+    return Array.from(new Set(ids));
+  }
+
+  // ─── Accounts ───────────────────────────────────────────────────
+
+  async findUserById(id: number) {
+    return strip((await load()).users?.find(u => u.id === id));
+  }
+
+  async findUserByEmail(email: string) {
+    const e = email.trim().toLowerCase();
+    return strip((await load()).users?.find(u => u.email === e));
+  }
+
+  async findUserByStripeCustomer(customerId: string) {
+    return strip((await load()).users?.find(u => u.stripeCustomerId === customerId));
+  }
+
+  async upsertUser(email: string, stripeCustomerId?: string | null) {
+    assertWritable();
+    const store = await load();
+    const users = (store.users ??= []);
+    const e = email.trim().toLowerCase();
+    let user = users.find(u => u.email === e);
+    if (!user) {
+      user = { id: users.reduce((m, u) => Math.max(m, u.id), 0) + 1, email: e, stripeCustomerId: stripeCustomerId ?? null, createdAt: now() };
+      users.push(user);
+    } else if (stripeCustomerId) {
+      user.stripeCustomerId = stripeCustomerId;
+    }
+    await save(store);
+    return strip(user)!;
+  }
+
+  async touchLogin(userId: number) {
+    assertWritable();
+    const store = await load();
+    const user = store.users?.find(u => u.id === userId);
+    if (user) {
+      user.lastLoginAt = now();
+      await save(store);
+    }
+  }
+
+  async upsertSubscription(sub: Subscription) {
+    assertWritable();
+    const store = await load();
+    const subs = (store.subscriptions ??= []);
+    const i = subs.findIndex(x => x.stripeSubscriptionId === sub.stripeSubscriptionId);
+    if (i >= 0) subs[i] = sub;
+    else subs.push(sub);
+    await save(store);
+  }
+
+  async listSubscriptions(userId: number) {
+    return ((await load()).subscriptions ?? [])
+      .filter(s => s.userId === userId)
+      .sort((a, b) => (b.currentPeriodEnd ?? '').localeCompare(a.currentPeriodEnd ?? ''));
+  }
+
+  // ─── Magic-link tokens ──────────────────────────────────────────
+
+  async createLoginToken(tokenHash: string, email: string, expiresAt: Date) {
+    assertWritable();
+    const store = await load();
+    (store.loginTokens ??= []).push({ tokenHash, email: email.trim().toLowerCase(), expiresAt: expiresAt.toISOString(), usedAt: null, createdAt: now() });
+    // Keep the local file small: drop tokens older than a day.
+    const cutoff = Date.now() - 24 * 3600_000;
+    store.loginTokens = store.loginTokens.filter(t => Date.parse(t.createdAt) > cutoff);
+    await save(store);
+  }
+
+  async consumeLoginToken(tokenHash: string) {
+    assertWritable();
+    const store = await load();
+    const t = store.loginTokens?.find(x => x.tokenHash === tokenHash);
+    if (!t || t.usedAt || Date.parse(t.expiresAt) <= Date.now()) return null;
+    t.usedAt = now();
+    await save(store);
+    return t.email;
+  }
+
+  async countLoginTokensSince(email: string, since: Date) {
+    const e = email.trim().toLowerCase();
+    return ((await load()).loginTokens ?? []).filter(t => t.email === e && Date.parse(t.createdAt) > since.getTime()).length;
+  }
+
+  // ─── Downloads ──────────────────────────────────────────────────
+
+  async logDownload(d: { userId: number | null; email: string | null; trackId: number; format: MasterFormat; via: DownloadVia }) {
+    assertWritable();
+    const store = await load();
+    (store.downloads ??= []).push({ ...d, createdAt: now() });
+    store.downloads = store.downloads.slice(-2000);
+    await save(store);
+  }
+
+  async countDownloadsSince(userId: number, since: Date) {
+    return ((await load()).downloads ?? []).filter(d => d.userId === userId && Date.parse(d.createdAt) > since.getTime()).length;
+  }
+}
+
+function strip(u: (User & { lastLoginAt?: string }) | undefined): User | null {
+  if (!u) return null;
+  const { lastLoginAt: _l, ...user } = u;
+  return user;
 }

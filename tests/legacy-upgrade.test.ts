@@ -59,7 +59,7 @@ test('legacy production schema is upgraded in place and stays usable', async () 
   const target = { exec: (sql: string) => db.exec(sql), query: (t: string, p?: unknown[]) => db.query(t, p as any[]) as any };
 
   const applied = await runMigrations(target);
-  assert.deepEqual(applied, ['001_init.sql', '002_upgrade_legacy_tracks.sql', '003_legacy_data_cleanup.sql']);
+  assert.deepEqual(applied, ['001_init.sql', '002_upgrade_legacy_tracks.sql', '003_legacy_data_cleanup.sql', '004_accounts_subscriptions_masters.sql']);
   assert.deepEqual(await runMigrations(target), [], 'second run is a no-op');
 
   const repo = new PostgresRepository(target);

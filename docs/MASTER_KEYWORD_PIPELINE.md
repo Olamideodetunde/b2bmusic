@@ -41,12 +41,14 @@ The column headers must match `fixtures/sample-track-index.csv` exactly.
 | G | Description | Yes | At least 60 characters, and never copied from another row (see §4). Supports simple formatting (see §4). |
 | H | Moods | Yes | Comma-separated, e.g. `Driving, Confident, Euphoric`. |
 | I | Use Cases | Yes | Comma-separated. Each use case gets its own hub page. |
-| J | Audio URL | Yes | A public, compressed preview MP3 (128–192 kbps). The API checks that it responds before publishing. |
+| J | Audio URL | Yes | The **watermarked** 128 kbps preview MP3 made by `npm run audio:watermark`. The API checks that it responds before publishing. |
 | K | Cover Image URL | No | Square artwork, at least 1000×1000 JPG. If blank, the brand share image is used. |
 | L–N | Standard / Commercial / Broadcast Price | Yes | USD, e.g. `10`, `20`, `40`. Checkout always charges the price stored in the database. |
 | O | Status | Yes | `Draft`, `Ready`, `Published` or `Error`. Set it to **Ready** to publish. |
 | P | Live URL | Output | Written back by Make.com. Leave blank. |
 | Q | Track ID | Output | A numeric ID written back by Make.com. **Never edit it.** It is how later edits update the same page. |
+| — | Master WAV | For sales | Path of the 24-bit WAV master in the **private** bucket, e.g. `masters/titan-ascent.wav` (from the watermark manifest). Never a URL. Buyers and subscribers download it through the site. |
+| — | Master AIFF | No | Same, for the AIFF master. |
 
 ---
 
@@ -113,6 +115,9 @@ The README explains how to publish a batch to staging.
 ---
 
 ## 7. Audio hosting
+
+The full set-up is in [`audio-and-access.md`](audio-and-access.md). In short:
+
 
 - **Host:** Cloudflare R2 (no egress fees), AWS S3 or Google Cloud Storage. The URL must be public and must not expire.
 - **Preview files:** 128–192 kbps MP3. Previews only load when a visitor presses play, so file size doesn't slow down page loads, but smaller files start playing sooner.

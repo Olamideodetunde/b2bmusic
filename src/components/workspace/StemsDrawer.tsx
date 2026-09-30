@@ -2,11 +2,12 @@
 
 import React, { useEffect } from 'react';
 import Link from 'next/link';
-import { X, Layers, Download, ArrowRight } from 'lucide-react';
+import { X, Layers, ArrowRight } from 'lucide-react';
 import { useWorkspace, DOWNLOAD_FORMATS } from './WorkspaceContext';
 import { STEM_BUS_CATEGORIES, StemBus } from '@/components/audio/GlobalAudioContext';
 import { cn, formatDuration } from '@/lib/utils';
 import { CoverImage } from '@/components/ui/CoverImage';
+import { TrackActionButton } from '@/components/auth/TrackActionButton';
 
 const busFor = (category: string): StemBus =>
   (Object.keys(STEM_BUS_CATEGORIES) as StemBus[]).find(bus => STEM_BUS_CATEGORIES[bus].includes(category)) || 'Other';
@@ -97,7 +98,7 @@ export function StemsDrawer() {
               </div>
               <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">{busFor(stem.category)}</span>
               <span className="text-[10px] font-mono tabular-nums text-slate-400 text-right">
-                {downloadFormat === 'MP3' ? '320 kbps' : stem.format.replace(/^WAV\s*/, '')}
+                {stem.format.replace(/^WAV\s*/, '')}
               </span>
             </div>
           ))}
@@ -117,16 +118,7 @@ export function StemsDrawer() {
 
         {/* Footer actions */}
         <div className="px-4 py-3 border-t border-white/[0.08] flex items-center gap-2">
-          <a
-            href={track.previewAudioUrl}
-            download={`${track.slug}-preview.mp3`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-white/10 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.04] transition-colors"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Preview MP3
-          </a>
+          <TrackActionButton track={track} variant="button" />
           <Link
             href={`/tracks/${track.slug}`}
             onClick={closeStems}

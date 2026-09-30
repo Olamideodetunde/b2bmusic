@@ -19,9 +19,12 @@ Google Sheet ──(Status = Ready)──▶ Make.com ──POST /api/tracks─�
 | Automation | Make.com | [docs/make-scenario.md](docs/make-scenario.md) |
 | Hosting | Vercel | — |
 | Email | Brevo (publish alerts, purchase receipts) | `src/lib/email/brevo.ts` |
-| Payments | Stripe Checkout + webhook | `src/app/api/checkout`, `src/app/api/stripe` |
+| Payments | Stripe Checkout (single-track licenses + all-access subscription) + webhook | `src/app/api/checkout`, `src/app/api/subscribe`, `src/app/api/stripe` |
+| Accounts | Magic-link email sign-in, signed session cookie | `src/lib/auth`, `src/app/api/auth` |
+| Audio storage | Amazon S3 or Backblaze B2 — private masters, public watermarked previews | `src/lib/storage`, `src/app/api/download` |
+| Watermarking | FFmpeg (bundled via `ffmpeg-static`) | `scripts/watermark-catalog.ts`, `src/lib/audio` |
 
-More docs: **[API reference](docs/api.md)** · **[Make.com scenario](docs/make-scenario.md)** · **[Keyword index guide](docs/MASTER_KEYWORD_PIPELINE.md)** · **[Production cutover](docs/cutover.md)** (upgrading the existing Neon database)
+More docs: **[Audio protection, subscriptions & downloads](docs/audio-and-access.md)** · **[API reference](docs/api.md)** · **[Make.com scenario](docs/make-scenario.md)** · **[Keyword index guide](docs/MASTER_KEYWORD_PIPELINE.md)** · **[Production cutover](docs/cutover.md)** (upgrading the existing Neon database)
 
 ---
 
@@ -59,10 +62,11 @@ Step 3 writes `fixtures/sample-track-index.results.csv` with the write-back colu
 | Command | What it does |
 |---|---|
 | `npm run dev` / `build` / `start` | Next.js |
-| `npm test` | 45 tests: sheet parsing, API auth, SEO helpers, backup restore and the full publish rules, run against real Postgres (PGlite, using the production migrations) **and** the local store |
+| `npm test` | 67 tests: sheet parsing, API auth, accounts & access rules, the real FFmpeg watermark pipeline, SEO helpers, backup restore and the full publish rules, run against real Postgres (PGlite, using the production migrations) **and** the local store |
 | `npm run typecheck` | TypeScript |
 | `npm run db:migrate` | Applies `db/migrations/*.sql` to `DATABASE_URL`. Idempotent — run on every deploy |
 | `npm run db:seed` | Loads the demo catalog through the publish pipeline. Idempotent |
+| `npm run audio:watermark -- --in <folder> [--aiff] [--upload]` | Builds 128 kbps watermarked previews + masters and uploads them to the buckets ([details](docs/audio-and-access.md#2-watermarking-the-catalog-ffmpeg)) |
 | `npm run db:restore -- <backup.json>` | Loads a JSON backup into a new side table for inspection or recovery (see [cutover](docs/cutover.md#rollback)) |
 | `npm run import:sheet -- <file.csv>` | Bulk-publish test batch / Make.com stand-in (`--dry-run`, `--api <url>`) |
 

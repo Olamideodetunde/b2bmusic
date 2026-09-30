@@ -8,11 +8,12 @@ import { LICENSE_TIERS, tierPriceCents, type LicenseTierKey } from '@/lib/licens
 import { PageHeader } from '@/components/navigation/PageHeader';
 import { Container, Eyebrow, Reveal } from '@/components/home/primitives';
 import { ClosingCta } from '@/components/home/ClosingCta';
+import { SubscriptionBanner } from '@/components/auth/SubscriptionBanner';
 import { BRAND, mailto } from '@/lib/brand';
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = getSiteUrl();
   return {
-    title: `Commercial Sync Licensing Pricing & Tiers | ${BRAND.name}`,
+    title: "Sync Licensing Pricing & Tiers",
     description: 'Simple, transparent sync licensing from $10. Web & Social, Commercial Ads, Full Buyout. Perpetual worldwide rights. Master WAV & isolated stems included.',
     alternates: {
       canonical: `${siteUrl}/pricing`,
@@ -52,7 +53,7 @@ const TIER_COLORS = { standard: 'text-slate-400', commercial: 'text-brand-400', 
 const faqs = [
   {
     q: 'Do I need a subscription?',
-    a: 'No. Every license is a one-time purchase. Pay once, use forever on your selected project. No recurring fees.',
+    a: 'No. You can buy a one-time perpetual license for a single track, or subscribe to download every track in the catalog. Subscribers are never charged again for a track their plan covers.',
   },
   {
     q: 'What is YouTube Content ID Whitelisting?',
@@ -130,8 +131,10 @@ export default async function PricingPage() {
         crumbs={[{ href: '/', label: 'Home' }, { label: 'Licensing' }]}
         eyebrow="Licensing & rights"
         title={<>One track. One fee. <span className="text-navy-300">Yours to keep.</span></>}
-        description="Per-track perpetual licenses — one project per license, no subscription, no renewal dates. Every tier is 100% one-stop cleared."
+        description="Buy a perpetual license for a single track, or subscribe to unlock the whole catalog. Every license is 100% one-stop cleared."
       />
+
+      <SubscriptionBanner />
 
       {/* ─── Rights matrix ─── */}
       <section className="py-12 lg:py-16" aria-label="License tier comparison">

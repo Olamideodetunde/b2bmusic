@@ -27,3 +27,13 @@ db/backups/
 
 # zip archives
 *.zip
+
+# Audio never lives in the repo or the Vercel deployment — it goes to S3 / Backblaze B2
+# (see docs/audio-and-access.md). Build output of `npm run audio:watermark`:
+.audio-build/
+masters/
+*.wav
+*.aif
+*.aiff
+*.flac
+*.mp3

@@ -33,18 +33,30 @@ export function setRepositoryForTesting(repo: TrackRepository | undefined) {
 }
 
 // ─── Read helpers used by pages ─────────────────────────────────────
+// Everything returned here can end up in HTML or client components, so the
+// locations of the full-quality masters are removed first. Server code that
+// needs them (the download route, the Stripe webhook) uses getRepository().
+
+/** Fields that must never reach the browser. */
+const PRIVATE_FIELDS = ['fullAudioUrl', 'masterWavKey', 'masterAiffKey'] as const;
+
+export function toPublicTrack(track: Track): Track {
+  const copy = { ...track };
+  for (const key of PRIVATE_FIELDS) delete copy[key];
+  return copy;
+}
 
 export async function getAllTracks(): Promise<Track[]> {
-  return getRepository().listPublished();
+  return (await getRepository().listPublished()).map(toPublicTrack);
 }
 
 export async function getTrackBySlug(slug: string): Promise<Track | null> {
   const track = await getRepository().findBySlug(slug);
-  return track?.isPublished ? track : null;
+  return track?.isPublished ? toPublicTrack(track) : null;
 }
 
 export async function getTracksByIds(ids: number[]): Promise<Track[]> {
-  return getRepository().findByIds(ids);
+  return (await getRepository().findByIds(ids)).map(toPublicTrack);
 }
 
 /** Accepts a URL slug ("folk-and-acoustic") or a display name ("Folk & Acoustic"). */

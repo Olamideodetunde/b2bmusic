@@ -21,6 +21,7 @@ import { Waveform } from './Waveform';
 import { useWorkspace, DOWNLOAD_FORMATS } from '@/components/workspace/WorkspaceContext';
 import { cn, formatDuration, rightsLabel } from '@/lib/utils';
 import { CoverImage } from '@/components/ui/CoverImage';
+import { TrackActionButton } from '@/components/auth/TrackActionButton';
 
 const STEM_BUSES: StemBus[] = ['Master', 'Drums', 'Bass', 'Melody', 'Other'];
 
@@ -268,6 +269,8 @@ export function MiniPlayerBar() {
               </button>
             ))}
           </div>
+
+          {currentTrack && <TrackActionButton track={currentTrack} variant="button" className="h-7 px-2.5" />}
 
           <button
             onClick={() => currentTrack && openStems(currentTrack)}

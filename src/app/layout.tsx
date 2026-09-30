@@ -11,6 +11,7 @@ import { getAllTracks } from "@/lib/db";
 import { getSiteUrl, toSlug, isIndexable } from "@/lib/utils";
 import { BPM_BANDS } from "@/lib/catalog/taxonomy";
 import { BRAND } from '@/lib/brand';
+import { AuthProvider } from '@/components/auth/AuthContext';
 
 // ── Brand + headings: Montserrat (the logo typeface) ────
 const montserrat = Montserrat({
@@ -120,6 +121,7 @@ export default async function RootLayout({
       <body className="min-h-screen bg-navy-950 text-slate-100 flex flex-col antialiased pb-[72px] font-jakarta selection:bg-brand-600/30 selection:text-white">
         <AudioProvider>
           <WorkspaceProvider>
+          <AuthProvider>
             <Navbar genres={genres} />
             <main className="flex-1">
               {children}
@@ -127,6 +129,7 @@ export default async function RootLayout({
             <Footer genres={genres.map(g => ({ href: `/genres/${g.slug}`, label: g.name }))} useCases={topUseCases} tempos={tempos} />
             <MiniPlayerBar />
             <StemsDrawer />
+          </AuthProvider>
           </WorkspaceProvider>
         </AudioProvider>
       </body>

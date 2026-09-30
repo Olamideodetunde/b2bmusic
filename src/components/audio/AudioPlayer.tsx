@@ -15,11 +15,11 @@ import {
   Layers,
   Check,
   Copy,
-  Download,
   Plus,
   AudioLines,
 } from 'lucide-react';
 import { cn, formatDuration } from '@/lib/utils';
+import { TrackActionButton } from '@/components/auth/TrackActionButton';
 
 interface AudioPlayerProps {
   track: Track;
@@ -190,17 +190,10 @@ export function AudioPlayer({ track }: AudioPlayerProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500" title="The license delivers the full-quality WAV master">MP3 preview · WAV on license</span>
-            <a
-              href={track.previewAudioUrl}
-              download={`${track.slug}-preview.mp3`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={toolBtn}
-            >
-              <Download className="w-3.5 h-3.5" />
-              Preview MP3
-            </a>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500" title="The player streams a watermarked 128 kbps preview; licenses deliver the full-quality master">
+              Watermarked preview · WAV/AIFF on license
+            </span>
+            <TrackActionButton track={track} variant="button" />
           </div>
         </div>
       </div>

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import {
   Play,
   Pause,
-  Download,
   Plus,
   Check,
   Layers,
@@ -22,6 +21,7 @@ import { Waveform } from '@/components/audio/Waveform';
 import { useWorkspace } from '@/components/workspace/WorkspaceContext';
 import { cn, formatDuration, parseMusicalKey, rightsLabel, toSlug } from '@/lib/utils';
 import { CoverImage } from '@/components/ui/CoverImage';
+import { TrackActionButton } from '@/components/auth/TrackActionButton';
 
 /*
  * Column template, shared by header and rows. Cells are hidden progressively:
@@ -284,16 +284,7 @@ export function TrackRow({ track, index, queue }: TrackRowProps) {
 
       {/* Actions */}
       <div className="flex items-center justify-end">
-        <a
-          href={track.previewAudioUrl}
-          download={`${track.slug}-preview.mp3`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={cn(actionBtn, 'hidden md:inline-flex')}
-          title="Download preview MP3"
-        >
-          <Download className="w-3.5 h-3.5" />
-        </a>
+        <TrackActionButton track={track} className="hidden md:inline-flex" />
         <button
           onClick={() => toggleProject(track.id)}
           className={cn(actionBtn, saved && 'text-brand-400 hover:text-brand-300')}

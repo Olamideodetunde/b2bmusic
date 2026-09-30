@@ -3,6 +3,9 @@ import { stripe } from '@/lib/stripe/client';
 import { getTrackBySlug } from '@/lib/db';
 import { isLicenseTier, tierInfo, tierPriceCents } from '@/lib/licensing';
 import { getSiteUrl, absoluteUrl } from '@/lib/utils';
+import { getViewer } from '@/lib/auth/server';
+import { downloadAccess } from '@/lib/auth/access';
+import { appOrigin } from '@/lib/auth/origin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -36,8 +39,19 @@ export async function POST(req: Request) {
     );
   }
 
+  // Never charge someone who already has this track (subscribers are covered for everything).
+  const viewer = await getViewer();
+  const access = downloadAccess(viewer, track.id);
+  if (access) {
+    return NextResponse.json(
+      { error: access === 'subscription' ? 'This track is included in your subscription' : 'You already license this track', access },
+      { status: 409 },
+    );
+  }
+
   const info = tierInfo(tier);
   const siteUrl = getSiteUrl();
+  const origin = appOrigin(req);
   const coverUrl = track.coverImageUrl ? absoluteUrl(track.coverImageUrl, siteUrl) : undefined;
 
   let session;
@@ -61,9 +75,11 @@ export async function POST(req: Request) {
       ],
       metadata: { trackId: String(track.id), slug: track.slug, tier },
       customer_creation: 'if_required',
+      ...(viewer ? { customer_email: viewer.user.email } : {}),
       allow_promotion_codes: true,
-      success_url: `${siteUrl}/tracks/${track.slug}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${siteUrl}/tracks/${track.slug}?checkout=cancelled`,
+      // Via stripe-return: verifies the payment, records the order and signs the buyer in.
+      success_url: `${origin}/api/auth/stripe-return?session_id={CHECKOUT_SESSION_ID}&next=${encodeURIComponent(`/tracks/${track.slug}`)}`,
+      cancel_url: `${origin}/tracks/${track.slug}?checkout=cancelled`,
     });
   } catch (err: any) {
     // Stripe rejected the request (bad key, invalid image URL, outage…). Log the detail

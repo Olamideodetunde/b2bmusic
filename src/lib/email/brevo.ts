@@ -130,6 +130,20 @@ export async function sendPublishFailureEmail(p: { title: string; errorSummary: 
   });
 }
 
+/** One-time sign-in link (magic link). */
+export async function sendLoginLinkEmail(p: { email: string; link: string }) {
+  return sendTransactionalEmail({
+    to: [{ email: p.email }],
+    subject: `Your sign-in link for ${BRAND.wordmark}`,
+    htmlContent: layout(
+      'Sign in',
+      `<p style="margin:0 0 20px;font-size:14px;line-height:1.6">Click the button below to sign in. The link works once and expires in 20 minutes.</p>
+      <a href="${escapeHtml(p.link)}" style="display:inline-block;background:${C.link};color:#ffffff;padding:12px 22px;text-decoration:none;border-radius:999px;font-weight:bold">Sign in</a>
+      <p style="margin:20px 0 0;color:${C.muted};font-size:12px">If you didn't ask for this, you can ignore this email — nobody can sign in without the link.</p>`,
+    ),
+  });
+}
+
 /** Purchase confirmation + license summary, sent from the Stripe webhook. */
 export async function sendPurchaseReceiptEmail(p: {
   customerEmail: string;
@@ -141,7 +155,7 @@ export async function sendPurchaseReceiptEmail(p: {
   orderRef: string;
 }) {
   const download = p.downloadUrl
-    ? `<a href="${escapeHtml(p.downloadUrl)}" style="display:inline-block;margin-top:20px;background:${C.link};color:#ffffff;padding:12px 22px;text-decoration:none;border-radius:999px;font-weight:bold">Download licensed audio</a>`
+    ? `<a href="${escapeHtml(p.downloadUrl)}" style="display:inline-block;margin-top:20px;background:${C.link};color:#ffffff;padding:12px 22px;text-decoration:none;border-radius:999px;font-weight:bold">Download your licensed master</a>`
     : `<p style="margin:20px 0 0;color:${C.muted};font-size:13px">Your licensed files will follow in a separate email from our licensing team.</p>`;
   return sendTransactionalEmail({
     to: [{ email: p.customerEmail }],

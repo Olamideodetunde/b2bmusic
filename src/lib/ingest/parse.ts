@@ -1,6 +1,7 @@
 import type { SyncMeta, TrackInput } from '../db/types';
 import { GENRES, SHEET_STATUSES, canonicalGenre, type SheetStatus } from '../catalog/taxonomy';
 import { parseMusicalKey } from '../utils';
+import { isValidObjectKey } from '../storage/keys';
 
 export interface FieldError {
   field: string;
@@ -39,6 +40,8 @@ const ALIASES: Record<string, string> = {
   trackid: 'trackId', id: 'trackId',
   liveurl: 'liveUrl',
   fullaudiourl: 'fullAudioUrl',
+  masterwav: 'masterWavKey', masterwavkey: 'masterWavKey', masterfile: 'masterWavKey', master: 'masterWavKey',
+  masteraiff: 'masterAiffKey', masteraiffkey: 'masterAiffKey',
   vocaltype: 'vocalType', vocal: 'vocalType',
   altmixes: 'altMixes',
   stems: 'stems',
@@ -218,6 +221,27 @@ export function parseTrackRow(raw: Record<string, unknown>): ParsedRow {
   const coverImageUrl = parseUrl(f.coverImageUrl) ?? undefined;
   if (!isBlank(f.coverImageUrl) && !coverImageUrl) errors.push({ field: 'coverImageUrl', message: 'Cover Image URL must be a full https:// link' });
   const fullAudioUrl = parseUrl(f.fullAudioUrl) ?? undefined;
+  if (fullAudioUrl) warnings.push('Full Audio URL is a public link — move the master to the private bucket and use the Master WAV column instead');
+
+  // Previews should be the watermarked MP3s published by `npm run audio:watermark`.
+  const previewBase = (process.env.PREVIEW_PUBLIC_BASE_URL || '').replace(/\/+$/, '');
+  if (previewAudioUrl && previewBase && !previewAudioUrl.startsWith(`${previewBase}/`)) {
+    warnings.push(`Audio URL is not on the watermarked preview bucket (${previewBase}) — run npm run audio:watermark`);
+  }
+
+  // ── Masters: object keys in the PRIVATE bucket (e.g. "masters/titan-ascent.wav"), never URLs ──
+  const masterKey = (field: 'masterWavKey' | 'masterAiffKey', label: string, ext: RegExp) => {
+    if (isBlank(f[field])) return undefined;
+    const key = str(f[field]).replace(/^\/+/, '');
+    if (!isValidObjectKey(key)) {
+      errors.push({ field, message: `${label} must be a file path inside the private masters bucket (e.g. masters/my-track.wav), not a URL` });
+      return undefined;
+    }
+    if (!ext.test(key)) errors.push({ field, message: `${label} must point to a ${label.split(' ')[1]} file` });
+    return key;
+  };
+  const masterWavKey = masterKey('masterWavKey', 'Master WAV', /\.wav$/i);
+  const masterAiffKey = masterKey('masterAiffKey', 'Master AIFF', /\.aiff?$/i);
 
   // ── Prices ──
   const price = (field: 'standard' | 'commercial' | 'broadcast', label: string) => {
@@ -264,6 +288,8 @@ export function parseTrackRow(raw: Record<string, unknown>): ParsedRow {
       commercialPriceCents,
       broadcastPriceCents,
       fullAudioUrl,
+      masterWavKey,
+      masterAiffKey,
       vocalType,
       altMixes: parseJsonField(f.altMixes),
       stems: parseJsonField(f.stems),
