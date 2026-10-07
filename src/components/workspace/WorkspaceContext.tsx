@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Track } from '@/lib/db/types';
 
 const PROJECT_STORAGE_KEY = 'b2b.project-bin';
@@ -33,6 +34,8 @@ const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefin
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [projectIds, setProjectIds] = useState<number[]>([]);
   const [stemsTrack, setStemsTrack] = useState<Track | null>(null);
+  const pathname = usePathname();
+  useEffect(() => setStemsTrack(null), [pathname]);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>('WAV');
 

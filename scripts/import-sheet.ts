@@ -19,7 +19,8 @@ const flag = (name: string) => {
   return i >= 0 ? args[i + 1] : undefined;
 };
 const file = args.find(a => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--api');
-const api = (flag('--api') ?? process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+// Deliberately NOT NEXT_PUBLIC_SITE_URL: a test batch must never go to the live site by default.
+const api = (flag('--api') ?? 'http://localhost:3000').replace(/\/$/, '');
 const dryRun = args.includes('--dry-run');
 
 async function main() {

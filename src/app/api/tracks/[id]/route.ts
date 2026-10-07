@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 function parseId(raw: string): number | null {
   const id = Number(raw);
-  return Number.isInteger(id) && id > 0 ? id : null;
+  return Number.isInteger(id) && id > 0 && id <= 2_147_483_647 ? id : null; // Postgres INTEGER range
 }
 
 /** GET /api/tracks/:id — the stored record (including unpublished fields). Authenticated. */

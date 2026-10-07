@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   }
 
   if (trackId !== undefined) {
-    if (!Number.isInteger(Number(trackId)) || Number(trackId) <= 0) {
+    if (!Number.isInteger(Number(trackId)) || Number(trackId) <= 0 || Number(trackId) > 2_147_483_647) {
       return NextResponse.json({ ok: false, errorSummary: `trackId must be a positive integer (got ${JSON.stringify(trackId)})` }, { status: 400 });
     }
     const track = await repo.findById(Number(trackId));

@@ -26,7 +26,7 @@ So: **migrate, then deploy straight away.** In the minute or two between the two
    ```bash
    npm run db:migrate
    ```
-   Expect `applied 001_init.sql`, `applied 002_upgrade_legacy_tracks.sql`, `applied 003_legacy_data_cleanup.sql`.
+   Expect `applied 001_init.sql`, `applied 002_upgrade_legacy_tracks.sql`, `applied 003_legacy_data_cleanup.sql`, `004_accounts_subscriptions_masters.sql`.
 4. **Deploy immediately.** Promote or trigger the production deployment in Vercel.
 5. **Verify:**
    - `GET https://<domain>/api/health` returns `{"ok":true,"storage":"postgres","publishedTracks":7,…}`.

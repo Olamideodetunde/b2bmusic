@@ -5,6 +5,7 @@ import { HubDirectory } from '@/components/hub/HubDirectory';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { getSiteUrl, toSlug } from '@/lib/utils';
 import { breadcrumbSchema, hubSummary, type Crumb } from '@/lib/seo/hubs';
+import { socialMeta } from '@/lib/seo/meta';
 
 export const revalidate = 3600;
 
@@ -13,17 +14,27 @@ const DESCRIPTION = 'Find the right cue for the job, from product reveals and po
 
 export function generateMetadata(): Metadata {
   const url = `${getSiteUrl()}/use-cases`;
-  return { title: TITLE, description: DESCRIPTION, alternates: { canonical: url }, openGraph: { title: TITLE, description: DESCRIPTION, url } };
+  return { title: TITLE, description: DESCRIPTION, alternates: { canonical: url }, ...socialMeta({ title: TITLE, description: DESCRIPTION, url }) };
 }
 
 export default async function UseCasesIndexPage() {
   const tracks = await getAllTracks();
   const siteUrl = getSiteUrl();
   const groups = new Map<string, typeof tracks>();
-  for (const t of tracks) for (const u of t.useCases) groups.set(u, [...(groups.get(u) ?? []), t]);
+  const labels = new Map<string, string>();
+  for (const t of tracks) {
+    for (const u of t.useCases) {
+      const slug = toSlug(u);
+      if (!slug) continue;
+      if (!labels.has(slug)) labels.set(slug, u);
+      const group = groups.get(slug) ?? [];
+      if (!group.includes(t)) group.push(t);
+      groups.set(slug, group);
+    }
+  }
   const entries = Array.from(groups.entries())
     .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
-    .map(([name, group]) => ({ href: `/use-cases/${toSlug(name)}`, name, count: group.length, summary: hubSummary(group, { omit: 'useCases' }) }));
+    .map(([slug, group]) => ({ href: `/use-cases/${slug}`, name: labels.get(slug)!, count: group.length, summary: hubSummary(group, { omit: 'useCases' }) }));
   const crumbs: Crumb[] = [{ href: '/', label: 'Home' }, { label: 'Use cases' }];
 
   return (

@@ -21,7 +21,7 @@ This scenario publishes every Google Sheet row whose **Status = Ready**, then wr
 ## Before you start
 
 - **The API key:** the same value as `INGESTION_API_KEY` in Vercel. Store it in a Make.com **data store** or as a scenario variable, not pasted into each module.
-- **The sheet:** row 1 must contain the headers exactly as in the master index: `Title … Track ID`.
+- **The sheet:** row 1 must contain the headers exactly as in the master index: `Title … Track ID` (A–Q), then `Last Error` (R), `Master WAV` (S) and `Master AIFF` (T). A ready-made test copy is `fixtures/make-demo-track-index.xlsx`.
 - **Duration format:** set column F to **Format → Number → Plain text**, so `2:45` stays text.
 
 ## [1] Google Sheets › Search Rows
@@ -30,7 +30,7 @@ This scenario publishes every Google Sheet row whose **Status = Ready**, then wr
 |---|---|
 | Spreadsheet / Sheet | the master index / `Track Index` |
 | Table contains headers | **Yes** |
-| Column range | `A-Q` |
+| Column range | `A-T` |
 | Filter | `Status` · *Equal to* · `Ready` |
 | Maximum number of returned rows | `50` (per run; the schedule picks up the rest) |
 
@@ -41,7 +41,7 @@ This scenario publishes every Google Sheet row whose **Status = Ready**, then wr
 ## [2] JSON › Create JSON
 
 Create a data structure named **Track Row** with these text fields:
-`Title, Target Keyword, Genre, BPM, Musical Key, Duration, Description, Moods, Use Cases, Audio URL, Cover Image URL, Standard Price, Commercial Price, Broadcast Price, Status, Track ID`
+`Title, Target Keyword, Genre, BPM, Musical Key, Duration, Description, Moods, Use Cases, Audio URL, Cover Image URL, Standard Price, Commercial Price, Broadcast Price, Status, Track ID, Master WAV, Master AIFF`
 
 Map each field from module [1]. For example, `Title` ← `1. Title`.
 
@@ -76,6 +76,7 @@ Map each field from module [1]. For example, `Title` ← `1. Title`.
 | Status (O) | `{{3.data.status}}` → *Published* |
 | Live URL (P) | `{{3.data.liveUrl}}` |
 | Track ID (Q) | `{{3.data.trackId}}` |
+| Last Error (R) | *(empty — use Make's `emptystring` keyword)* so a fixed row loses its old error |
 
 Leave every other column empty in this module, so the client's data isn't overwritten.
 

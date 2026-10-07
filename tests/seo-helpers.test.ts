@@ -47,3 +47,24 @@ test('only production deployments are indexable', () => {
     }
   }
 });
+
+test('ISO 8601 durations for MusicRecording / AudioObject', async () => {
+  const { isoDuration } = await import('../src/components/track/SchemaJsonLd');
+  assert.equal(isoDuration(110), 'PT1M50S');
+  assert.equal(isoDuration(120), 'PT2M');
+  assert.equal(isoDuration(45), 'PT45S');
+  assert.equal(isoDuration(0), 'PT0S');
+});
+
+test('every page gets a complete social card with a default image', async () => {
+  const { socialMeta, SITE_TITLE, SITE_DESCRIPTION } = await import('../src/lib/seo/meta');
+  assert.ok(SITE_TITLE.length <= 60, `site title is ${SITE_TITLE.length} chars`);
+  assert.ok(SITE_DESCRIPTION.length <= 155, `site description is ${SITE_DESCRIPTION.length} chars`);
+  const m = socialMeta({ title: 'Genres', description: 'd', url: '/genres' });
+  const og = m.openGraph as any;
+  assert.match(og.url, /^https?:\/\/.+\/genres$/);
+  assert.match(og.images[0].url, /\/brand\/og-default\.jpg$/);
+  assert.equal(og.images[0].width, 1200);
+  assert.ok(og.siteName);
+  assert.equal((m.twitter as any).card, 'summary_large_image');
+});

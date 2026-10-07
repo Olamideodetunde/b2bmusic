@@ -3,7 +3,9 @@
  * publish pipeline Make.com uses, so seed data obeys every validation rule.
  * Idempotent: re-running updates the same tracks instead of duplicating them.
  *
- * Works against DATABASE_URL, or the local .data store when it isn't set.
+ * Writes to the local .data store by default. Seeding a Postgres database (it can overwrite
+ * live tracks that share a demo title + keyword) needs an explicit opt-in:
+ *   SEED_DATABASE=yes npm run db:seed
  */
 import './env';
 import { getRepository } from '../src/lib/db';
@@ -11,6 +13,12 @@ import { initialTracks } from '../src/lib/db/mock-data';
 import { publishTrack } from '../src/lib/ingest/service';
 
 async function main() {
+  if (process.env.DATABASE_URL && process.env.SEED_DATABASE !== 'yes') {
+    const host = (() => { try { return new URL(process.env.DATABASE_URL!).hostname; } catch { return 'the configured database'; } })();
+    console.error(`Refusing to seed ${host}: demo data would be published there (and could overwrite live tracks).\n` +
+      'Use the local store (unset DATABASE_URL), or opt in with SEED_DATABASE=yes for a staging database.');
+    process.exit(1);
+  }
   const repo = getRepository();
   console.log(`Seeding ${initialTracks.length} demo tracks into ${repo.kind} storage…`);
   let failed = 0;

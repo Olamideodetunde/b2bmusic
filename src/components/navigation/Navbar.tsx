@@ -149,16 +149,16 @@ export function Navbar({ genres }: { genres: NavGenre[] }) {
       <div className="w-full h-full px-4 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 flex items-center justify-between gap-4">
 
         {/* ── Logo ── */}
-        <Link href="/" className="flex items-center shrink-0 group min-w-0" aria-label={`${BRAND.wordmark} — home`}>
-          <Logo className="transition-opacity group-hover:opacity-90" />
+        <Link href="/" className="flex items-center shrink-0 group min-w-0">
+          <Logo className="transition-opacity group-hover:opacity-90" /><span className="sr-only"> (home)</span>
         </Link>
 
         {/* ── Desktop Nav ── */}
-        <nav className="hidden md:flex items-center gap-5 xl:gap-7 whitespace-nowrap text-xs font-semibold uppercase tracking-wider font-mono text-slate-400">
+        <nav className="hidden lg:flex items-center gap-5 xl:gap-7 whitespace-nowrap text-xs font-semibold uppercase tracking-wider font-mono text-slate-400">
           <Link href="/#catalog" className="hover:text-white transition-colors">Catalog</Link>
           {NAV_LINKS.map((link, i) => (
             // The 3rd/4th genres only fit next to the account controls on wide screens.
-            <Link key={link.href} href={link.href} className={`${linkClass(link.href)} ${i >= 2 ? 'hidden xl:inline' : ''}`}>{link.label}</Link>
+            <Link key={link.href} href={link.href} className={`${linkClass(link.href)} ${i >= 2 ? 'hidden 2xl:inline' : ''}`}>{link.label}</Link>
           ))}
           <Link href="/pricing" className={`font-bold ${pathname === '/pricing' ? 'text-white' : 'text-brand-400 hover:text-white'} transition-colors`}>
             Pricing ($10+)
@@ -182,7 +182,7 @@ export function Navbar({ genres }: { genres: NavGenre[] }) {
 
           <Link
             href="/#catalog"
-            className="hidden xl:inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-bold px-4 h-8 rounded-full btn-primary text-white"
+            className="hidden 2xl:inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-bold px-4 h-8 rounded-full btn-primary text-white"
           >
             <Search className="w-3.5 h-3.5" />
             <span>Search Catalog</span>
@@ -191,7 +191,7 @@ export function Navbar({ genres }: { genres: NavGenre[] }) {
           {/* Mobile hamburger */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden w-9 h-9 inline-flex items-center justify-center rounded-xl bg-navy-900 text-slate-300 hover:text-white border border-white/10 transition-colors"
+            className="lg:hidden w-9 h-9 inline-flex items-center justify-center rounded-xl bg-navy-900 text-slate-300 hover:text-white border border-white/10 transition-colors"
             aria-label="Toggle navigation menu"
             aria-expanded={mobileOpen}
           >
@@ -202,7 +202,7 @@ export function Navbar({ genres }: { genres: NavGenre[] }) {
 
       {/* ── Mobile Drawer ── */}
       {mobileOpen && (
-        <div className="md:hidden bg-navy-950/95 backdrop-blur-2xl border-b border-white/10 px-4 py-3">
+        <div className="lg:hidden bg-navy-950/95 backdrop-blur-2xl border-b border-white/10 px-4 py-3">
           <div className="sm:hidden flex items-center justify-between mb-3 pb-3 border-b border-white/[0.06]">
             <span className="label-xs">Project bin</span>
             <ProjectBin />

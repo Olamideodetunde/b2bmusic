@@ -5,6 +5,7 @@ import { HubDirectory } from '@/components/hub/HubDirectory';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { getSiteUrl, toSlug } from '@/lib/utils';
 import { breadcrumbSchema, hubSummary, type Crumb } from '@/lib/seo/hubs';
+import { socialMeta } from '@/lib/seo/meta';
 
 export const revalidate = 3600;
 
@@ -13,7 +14,7 @@ const DESCRIPTION = 'Browse the catalog by genre: every track pre-cleared for co
 
 export function generateMetadata(): Metadata {
   const url = `${getSiteUrl()}/genres`;
-  return { title: TITLE, description: DESCRIPTION, alternates: { canonical: url }, openGraph: { title: TITLE, description: DESCRIPTION, url } };
+  return { title: TITLE, description: DESCRIPTION, alternates: { canonical: url }, ...socialMeta({ title: TITLE, description: DESCRIPTION, url }) };
 }
 
 export default async function GenresIndexPage() {

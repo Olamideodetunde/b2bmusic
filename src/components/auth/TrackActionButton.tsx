@@ -44,7 +44,7 @@ export function TrackActionButton({
     }
   };
 
-  const label = access ? `Download ${fmt.toUpperCase()} master of ${track.title}` : `Get ${track.title} — subscribe or buy a license`;
+  const label = access ? `Download ${fmt.toUpperCase()} master of ${track.title}` : `Download ${track.title} — subscribe or buy a license`;
 
   if (variant === 'icon') {
     return (

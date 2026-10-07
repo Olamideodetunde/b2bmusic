@@ -12,6 +12,8 @@ import { Modal } from './Modal';
 export interface Me {
   user: { email: string } | null;
   isSubscribed: boolean;
+  /** The user has a Stripe customer, so the billing portal can open. */
+  hasBillingAccount?: boolean;
   subscription: { status: string; currentPeriodEnd: string | null; cancelAtPeriodEnd: boolean } | null;
   purchasedTrackIds: number[];
   plan: Plan | null;
@@ -39,7 +41,7 @@ interface AuthContextType {
   download: (track: Track, format: MasterFormat) => Promise<void>;
   signOut: () => Promise<void>;
   openBillingPortal: () => Promise<void>;
-  notify: (message: string, tone?: 'info' | 'error') => void;
+  notify: (message: string, tone?: 'info' | 'error', href?: string) => void;
 }
 
 const EMPTY: Me = { user: null, isSubscribed: false, subscription: null, purchasedTrackIds: [], plan: null };
@@ -49,7 +51,6 @@ const currentPath = () => window.location.pathname + window.location.hash;
 
 /** Messages for the query flags our auth/download redirects add to the URL. */
 const FLAG_MESSAGES: Record<string, Record<string, [string, 'info' | 'error']>> = {
-  signin: { ok: ['You’re signed in.', 'info'], expired: ['That sign-in link has expired or was already used. Request a new one.', 'error'] },
   subscribed: { '1': ['Welcome aboard — your subscription is active. Every track is now unlocked.', 'info'] },
   download: {
     sign_in_required: ['Sign in to download the master.', 'error'],
@@ -59,6 +60,12 @@ const FLAG_MESSAGES: Record<string, Record<string, [string, 'info' | 'error']>> 
     limit_reached: ['Daily download limit reached. Try again tomorrow.', 'error'],
     storage_unavailable: ['Downloads are temporarily unavailable. Please try again shortly.', 'error'],
   },
+  signin: {
+    ok: ['You’re signed in.', 'info'],
+    expired: ['That sign-in link has expired or was already used. Request a new one.', 'error'],
+    check_email: ['Payment received. We’ve emailed you a sign-in link — open it to download your files.', 'info'],
+    email_failed: ['Payment received, but we couldn’t email your sign-in link. Use “Sign in” with your checkout email.', 'error'],
+  },
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -67,9 +74,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [signInOpen, setSignInOpen] = useState(false);
   const [unlock, setUnlock] = useState<{ track: Track; options: UnlockOptions } | null>(null);
-  const [notice, setNotice] = useState<{ message: string; tone: 'info' | 'error' } | null>(null);
+  const [notice, setNotice] = useState<{ message: string; tone: 'info' | 'error'; href?: string } | null>(null);
 
-  const notify = useCallback((message: string, tone: 'info' | 'error' = 'info') => setNotice({ message, tone }), []);
+  const notify = useCallback((message: string, tone: 'info' | 'error' = 'info', href?: string) => setNotice({ message, tone, href }), []);
 
   const refresh = useCallback(async () => {
     try {
@@ -87,14 +94,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Show (then strip) the one-shot flags left by sign-in / checkout / download redirects.
     const url = new URL(window.location.href);
     let changed = false;
+    // Local development only: the server passes the sign-in link instead of emailing it.
+    const devLink = url.searchParams.get('dev_link');
+    url.searchParams.delete('dev_link');
     for (const [flag, messages] of Object.entries(FLAG_MESSAGES)) {
       const value = url.searchParams.get(flag);
       if (value && messages[value]) {
-        notify(...messages[value]);
+        const [message, tone] = messages[value];
+        notify(message, tone, flag === 'signin' && devLink?.startsWith(window.location.origin) ? devLink : undefined);
         url.searchParams.delete(flag);
         changed = true;
       }
     }
+    if (devLink) changed = true;
     if (changed) window.history.replaceState(null, '', url.pathname + url.search + url.hash);
   }, [refresh, notify]);
 
@@ -175,7 +187,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             notice.tone === 'error' ? 'bg-navy-900 border-amber-500/40 text-amber-100' : 'bg-navy-900 border-brand-500/40 text-slate-100'
           }`}
         >
-          <span className="flex-1">{notice.message}</span>
+          <span className="flex-1">
+            {notice.message}
+            {notice.href && (
+              <a href={notice.href} className="block mt-1 text-xs font-mono text-brand-400 hover:text-brand-300">Development: open the sign-in link →</a>
+            )}
+          </span>
           <button onClick={() => setNotice(null)} className="text-slate-400 hover:text-white" aria-label="Dismiss">
             <X className="w-4 h-4" />
           </button>
@@ -325,7 +342,7 @@ function UnlockModal({
               ? <p className="mt-1 text-2xl font-mono font-medium text-white">{formatPlan(plan)}</p>
               : <p className="mt-2 text-sm font-mono text-slate-400">Coming soon</p>}
             <ul className="mt-3 space-y-1.5 text-xs text-slate-300 flex-1">
-              {['Every track in the catalog', 'Unlimited WAV & AIFF downloads', 'Sync license on everything you download', 'Cancel anytime'].map(f => (
+              {['Every track in the catalog', 'Unlimited WAV & AIFF downloads (fair use)', 'Sync license on everything you download', 'Cancel anytime'].map(f => (
                 <li key={f} className="flex gap-2"><Check className="w-3.5 h-3.5 mt-px text-brand-400 shrink-0" />{f}</li>
               ))}
             </ul>
@@ -346,7 +363,7 @@ function UnlockModal({
             <h3 className="mt-3 text-base font-semibold text-white">Buy a single-track sync license</h3>
             <p className="mt-1 text-2xl font-mono font-medium text-white">{singleLabel}</p>
             <ul className="mt-3 space-y-1.5 text-xs text-slate-300 flex-1">
-              {['This track only, perpetual license', 'WAV & AIFF master + stems', 'Choose Web, Commercial or Broadcast'].map(f => (
+              {['This track only, perpetual license', 'Full-quality WAV & AIFF master', 'Choose Web, Commercial or Broadcast'].map(f => (
                 <li key={f} className="flex gap-2"><Check className="w-3.5 h-3.5 mt-px text-slate-500 shrink-0" />{f}</li>
               ))}
             </ul>

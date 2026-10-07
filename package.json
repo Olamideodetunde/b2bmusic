@@ -1,8 +1,8 @@
 {
-  "name": "b2b-production-music-frontend",
+  "name": "global-b2b-audio-holding",
   "version": "1.0.0",
   "private": true,
-  "description": "B2BProductionMusic.com \u2014 programmatic landing pages: Google Sheet \u2192 Make.com \u2192 API \u2192 Neon \u2192 Next.js ISR.",
+  "description": "GlobalB2BAudioHolding.com \u2014 programmatic landing pages (Google Sheet \u2192 Make.com \u2192 API \u2192 Neon \u2192 Next.js ISR), subscriptions and protected master downloads.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -35,6 +35,8 @@
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
     "ffmpeg-static": "^5.3.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",
@@ -43,5 +45,12 @@
   },
   "engines": {
     "node": ">=20.12"
-  }
+  },
+  "browserslist": [
+    "chrome >= 109",
+    "edge >= 109",
+    "firefox >= 115",
+    "safari >= 15.4",
+    "ios_saf >= 15.4"
+  ]
 }

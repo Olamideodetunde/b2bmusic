@@ -278,7 +278,7 @@ export class PostgresRepository implements TrackRepository {
     const { rows } = await this.db.query(
       `INSERT INTO users (email, stripe_customer_id) VALUES (lower($1), $2)
        ON CONFLICT ((lower(email))) DO UPDATE
-         SET stripe_customer_id = COALESCE(EXCLUDED.stripe_customer_id, users.stripe_customer_id)
+         SET stripe_customer_id = COALESCE(users.stripe_customer_id, EXCLUDED.stripe_customer_id)
        RETURNING ${USER_COLUMNS}`,
       [email.trim(), stripeCustomerId ?? null],
     );

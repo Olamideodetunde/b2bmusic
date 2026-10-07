@@ -12,11 +12,12 @@ import { getSiteUrl, toSlug, isIndexable } from "@/lib/utils";
 import { BPM_BANDS } from "@/lib/catalog/taxonomy";
 import { BRAND } from '@/lib/brand';
 import { AuthProvider } from '@/components/auth/AuthContext';
+import { SITE_DESCRIPTION, SITE_TITLE, socialMeta } from '@/lib/seo/meta';
 
 // ── Brand + headings: Montserrat (the logo typeface) ────
 const montserrat = Montserrat({
   subsets: ["latin"],
-  weight: ["500", "600", "700", "800", "900"],
+  weight: ["500", "600", "700"],
   variable: "--font-brand",
   display: "swap",
 });
@@ -24,7 +25,7 @@ const montserrat = Montserrat({
 // ── Body / Interface: Plus Jakarta Sans ──────────────────
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-jakarta",
   display: "swap",
 });
@@ -40,10 +41,10 @@ const jetbrains = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: {
-    default: `${BRAND.name} | Commercial Music Licensing for Video & Media`,
+    default: SITE_TITLE,
     template: `%s | ${BRAND.name}`,
   },
-  description: "Direct synchronization and commercial music licensing for tech companies, video agencies, podcasts, and commercial broadcasts. 100% pre-cleared master WAVs & isolated stems.",
+  description: SITE_DESCRIPTION,
   keywords: [
     "production music",
     "commercial music licensing",
@@ -56,6 +57,8 @@ export const metadata: Metadata = {
     "youtube content id safe music"
   ],
   authors: [{ name: "Alvan Esiaka" }],
+  // Google Search Console → Add property → HTML tag: paste only the content="…" value here.
+  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
   robots: {
     index: isIndexable(),
     follow: isIndexable(),
@@ -67,26 +70,7 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  openGraph: {
-    title: `${BRAND.name} | Commercial Music Licensing`,
-    description: "High-quality, commercially cleared production music with direct sync licenses and YouTube Content ID protection. Perpetual licenses from $10.",
-    siteName: BRAND.name,
-    type: "website",
-    images: [
-      {
-        url: "/brand/og-default.jpg",
-        width: 1200,
-        height: 630,
-        alt: `${BRAND.name} catalog`,
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${BRAND.name} | Commercial Music Licensing`,
-    description: "High-quality, commercially cleared production music with direct sync licenses and YouTube Content ID protection.",
-    images: ["/brand/og-default.jpg"],
-  },
+  ...socialMeta({ title: SITE_TITLE, description: SITE_DESCRIPTION, url: '/' }),
 };
 
 export default async function RootLayout({

@@ -1,6 +1,9 @@
 import React from 'react';
 import { Container, Eyebrow, PrimaryButton, GhostButton } from '@/components/home/primitives';
 import { CoverImage } from '@/components/ui/CoverImage';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Page not found', robots: { index: false, follow: true } };
 
 export default function NotFound() {
   return (

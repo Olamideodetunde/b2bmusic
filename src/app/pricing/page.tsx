@@ -10,17 +10,18 @@ import { Container, Eyebrow, Reveal } from '@/components/home/primitives';
 import { ClosingCta } from '@/components/home/ClosingCta';
 import { SubscriptionBanner } from '@/components/auth/SubscriptionBanner';
 import { BRAND, mailto } from '@/lib/brand';
+import { JsonLd } from '@/components/seo/JsonLd';
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = getSiteUrl();
   return {
     title: "Sync Licensing Pricing & Tiers",
-    description: 'Simple, transparent sync licensing from $10. Web & Social, Commercial Ads, Full Buyout. Perpetual worldwide rights. Master WAV & isolated stems included.',
+    description: 'Sync licenses per track from $10 (Web, Commercial or Broadcast) or an all-access subscription. Perpetual worldwide rights, WAV & AIFF masters.',
     alternates: {
       canonical: `${siteUrl}/pricing`,
     },
     openGraph: {
       title: `Commercial Sync Licensing Tiers | ${BRAND.name}`,
-      description: 'Simple flat-fee sync licensing. $10 Web, $20 Commercial Ads, $40 Broadcast TV. Perpetual worldwide rights.',
+      description: 'Per-track sync licenses from $10 or an all-access subscription. Perpetual worldwide rights.',
       url: `${siteUrl}/pricing`,
       siteName: BRAND.name,
       type: 'website',
@@ -36,7 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       title: `Commercial Sync Licensing Tiers | ${BRAND.name}`,
-      description: 'Simple flat-fee sync licensing from $10. Perpetual worldwide rights.',
+      description: 'Per-track sync licenses from $10 or an all-access subscription. Perpetual worldwide rights.',
       images: [`${siteUrl}/banners/banner-crowd-amber.jpg`],
     },
   };
@@ -108,7 +109,7 @@ export default async function PricingPage() {
   // Capability matrix derived from the tier copy above (one row per right).
   const matrix: { label: string; included: [boolean, boolean, boolean] }[] = [
     { label: 'Unlimited online views & streams', included: [true, true, true] },
-    { label: 'Master WAV (24-bit / 48kHz)', included: [true, true, true] },
+    { label: 'Master WAV & AIFF (24-bit)', included: [true, true, true] },
     { label: 'YouTube Content ID whitelist', included: [true, true, true] },
     { label: 'Cue sheet & ISRC documentation', included: [true, true, true] },
     { label: 'Paid digital advertising', included: [false, true, true] },
@@ -122,10 +123,7 @@ export default async function PricingPage() {
 
   return (
     <div>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-      />
+      <JsonLd data={faqSchema} />
 
       <PageHeader
         crumbs={[{ href: '/', label: 'Home' }, { label: 'Licensing' }]}

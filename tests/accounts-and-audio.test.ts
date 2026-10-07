@@ -144,6 +144,10 @@ test('post-login redirects stay on this site', () => {
   assert.equal(safeNextPath('https://evil.com'), '/');
   assert.equal(safeNextPath('//evil.com'), '/');
   assert.equal(safeNextPath('/\\evil.com'), '/');
+  // Browsers strip tab/newline inside URLs, which would turn these into //evil.com
+  assert.equal(safeNextPath('/\t/evil.com'), '/');
+  assert.equal(safeNextPath('/\n/evil.com'), '/');
+  assert.equal(safeNextPath('/tracks/x#license'), '/tracks/x#license');
   assert.equal(isValidEmail('editor@studio.co'), true);
   assert.equal(isValidEmail('not-an-email'), false);
 });

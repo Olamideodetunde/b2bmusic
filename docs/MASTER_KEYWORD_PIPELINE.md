@@ -26,7 +26,7 @@ flowchart LR
 
 ---
 
-## 2. Sheet columns (A–Q)
+## 2. Sheet columns (A–T)
 
 The column headers must match `fixtures/sample-track-index.csv` exactly.
 
@@ -36,8 +36,8 @@ The column headers must match `fixtures/sample-track-index.csv` exactly.
 | B | Target Keyword | Yes | The buyer search phrase the page targets; the slug is built from it. It must be unique across the catalog (see §3). |
 | C | Genre | Yes | Dropdown: `Electronic`, `Cinematic`, `Corporate / Tech`, `Hip Hop`, `Indie Rock`, `Folk & Acoustic`, `Ambient`. Any other value is rejected. |
 | D | BPM | Yes | Integer, e.g. `128`. It places the track in a tempo hub (under 90, 90–124, or 125+). |
-| E | Musical Key | No | For example `A Minor`. It is shown as a badge with its Camelot code. |
-| F | Duration | No | `M:SS`. Format the column as *Plain text* so Sheets doesn't turn it into a time of day. |
+| E | Musical Key | Yes | For example `A Minor`. It is shown as a badge with its Camelot code. |
+| F | Duration | Yes | `M:SS`. Format the column as *Plain text* so Sheets doesn't turn it into a time of day. |
 | G | Description | Yes | At least 60 characters, and never copied from another row (see §4). Supports simple formatting (see §4). |
 | H | Moods | Yes | Comma-separated, e.g. `Driving, Confident, Euphoric`. |
 | I | Use Cases | Yes | Comma-separated. Each use case gets its own hub page. |
@@ -47,8 +47,9 @@ The column headers must match `fixtures/sample-track-index.csv` exactly.
 | O | Status | Yes | `Draft`, `Ready`, `Published` or `Error`. Set it to **Ready** to publish. |
 | P | Live URL | Output | Written back by Make.com. Leave blank. |
 | Q | Track ID | Output | A numeric ID written back by Make.com. **Never edit it.** It is how later edits update the same page. |
-| — | Master WAV | For sales | Path of the 24-bit WAV master in the **private** bucket, e.g. `masters/titan-ascent.wav` (from the watermark manifest). Never a URL. Buyers and subscribers download it through the site. |
-| — | Master AIFF | No | Same, for the AIFF master. |
+| R | Last Error | Output | Why the last publish failed, written by Make.com. Leave blank. |
+| S | Master WAV | For sales | Path of the 24-bit WAV master in the **private** bucket, e.g. `masters/titan-ascent.wav` (from the watermark manifest). Never a URL. Buyers and subscribers download it through the site. |
+| T | Master AIFF | No | Same, for the AIFF master. |
 
 ---
 

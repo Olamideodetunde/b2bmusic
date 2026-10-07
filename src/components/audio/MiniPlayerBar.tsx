@@ -186,7 +186,7 @@ export function MiniPlayerBar() {
           </div>
 
           {/* Stem monitor: click the name to mute, S to solo */}
-          <div className="flex items-center gap-1.5 pl-[190px] min-w-0">
+          <div className="hidden xl:flex items-center gap-1.5 pl-[190px] min-w-0 overflow-hidden">
             {STEM_BUSES.map(bus => {
               const available = busAvailable(bus);
               const muted = mutedStems.includes(bus);
@@ -253,7 +253,7 @@ export function MiniPlayerBar() {
             />
           </div>
 
-          <div className="flex items-center h-7 rounded-md border border-white/[0.08] p-0.5" role="radiogroup" aria-label="Download format">
+          <div className="hidden lg:flex items-center h-7 rounded-md border border-white/[0.08] p-0.5" role="radiogroup" aria-label="Download format">
             {DOWNLOAD_FORMATS.map(fmt => (
               <button
                 key={fmt}

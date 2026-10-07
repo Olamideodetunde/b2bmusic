@@ -10,7 +10,7 @@ export const LICENSE_TIERS = [
     name: 'Standard',
     label: 'Web & Social',
     summary: 'YouTube, podcasts, social and internal corporate video.',
-    features: ['Unlimited online views & streams', 'Master 24-bit WAV & 320kbps MP3', 'YouTube Content ID whitelisting'],
+    features: ['Unlimited online views & streams', 'Full-quality WAV & AIFF master', 'YouTube Content ID whitelisting'],
     scope: 'Single project · online & social only',
   },
   {
@@ -18,7 +18,7 @@ export const LICENSE_TIERS = [
     name: 'Commercial',
     label: 'Commercial & Ads',
     summary: 'Client projects, paid digital ads, trade shows and promos.',
-    features: ['All Standard rights + paid digital ads', 'Isolated stems archive', 'All alt-mixes & cutdowns (:60 / :30 / :15)', 'Agency client transfer permitted'],
+    features: ['All Standard rights + paid digital ads', 'Isolated stems (sent by our licensing team)', 'All alt-mixes & cutdowns (:60 / :30 / :15)', 'Agency client transfer permitted'],
     scope: 'Client handover permitted',
   },
   {
@@ -26,7 +26,7 @@ export const LICENSE_TIERS = [
     name: 'Broadcast',
     label: 'Broadcast, TV & Film',
     summary: 'Linear TV, OTT streaming, theatrical film and games.',
-    features: ['Worldwide TV & OTT synchronization', 'Unlimited media spend', 'Stems + all broadcast cuts', 'Full legal indemnification & cue-sheet filing'],
+    features: ['Worldwide TV & OTT synchronization', 'Unlimited media spend', 'Stems + all broadcast cuts (sent by our licensing team)', 'Full legal indemnification & cue-sheet filing'],
     scope: 'Unlimited usage · worldwide · perpetual',
   },
 ] as const;

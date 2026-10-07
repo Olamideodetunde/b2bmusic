@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   const ids = (new URL(req.url).searchParams.get('ids') ?? '')
     .split(',')
     .map(Number)
-    .filter(n => Number.isInteger(n) && n > 0)
+    .filter(n => Number.isInteger(n) && n > 0 && n <= 2_147_483_647)
     .slice(0, 100);
   const tracks = await getTracksByIds(ids);
   return NextResponse.json({ tracks }, { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } });

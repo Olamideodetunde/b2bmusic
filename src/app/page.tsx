@@ -13,38 +13,19 @@ import { CatalogExplorer } from '@/components/hub/CatalogExplorer';
 import { formatPrice, getSiteUrl } from '@/lib/utils';
 import { LICENSE_TIERS, tierPriceCents, type LicenseTierKey } from '@/lib/licensing';
 import { BRAND } from '@/lib/brand';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { SITE_DESCRIPTION, SITE_TITLE, socialMeta } from '@/lib/seo/meta';
 
 export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = getSiteUrl();
   return {
-    title: `${BRAND.name} | Commercial Music Licensing for Video, Ads & Film`,
-    description: 'Direct synchronization and commercial music licensing library. 100% pre-cleared master recordings with 24-bit WAV, isolated stems, broadcast cutdowns, and YouTube Content ID whitelist.',
-    alternates: {
-      canonical: siteUrl,
-    },
-    openGraph: {
-      title: `${BRAND.name} | Commercial Sync Licensing Library`,
-      description: '100% pre-cleared commercial music licensing with stems, cutdowns, and YouTube Content ID protection. Perpetual licenses from $10.',
-      url: siteUrl,
-      siteName: BRAND.name,
-      type: 'website',
-      images: [
-        {
-          url: `${siteUrl}/brand/og-default.jpg`,
-          width: 1200,
-          height: 630,
-          alt: `${BRAND.name} catalog`,
-        },
-      ],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: `${BRAND.name} | Commercial Music Licensing`,
-      description: '100% pre-cleared commercial music licensing with stems, cutdowns, and YouTube Content ID protection.',
-      images: [`${siteUrl}/brand/og-default.jpg`],
-    },
+    // The root page isn't wrapped by the layout's title template, so it carries the brand itself.
+    title: { absolute: SITE_TITLE },
+    description: SITE_DESCRIPTION,
+    alternates: { canonical: siteUrl },
+    ...socialMeta({ title: SITE_TITLE, description: SITE_DESCRIPTION, url: '/' }),
   };
 }
 
@@ -55,6 +36,7 @@ export default async function HomePage() {
   const organizationSchema = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
+    '@id': `${siteUrl}/#organization`,
     name: BRAND.name,
     url: siteUrl,
     logo: `${siteUrl}${BRAND.logoPath}`,
@@ -69,8 +51,10 @@ export default async function HomePage() {
   const websiteSchema = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
+    '@id': `${siteUrl}/#website`,
     name: BRAND.name,
     url: siteUrl,
+    publisher: { '@id': `${siteUrl}/#organization` },
     potentialAction: {
       '@type': 'SearchAction',
       target: `${siteUrl}/?q={search_term_string}`,
@@ -88,14 +72,8 @@ export default async function HomePage() {
   return (
     <div className="bg-navy-950 text-white">
       {/* Search Engine Structured Data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
-      />
+      <JsonLd data={organizationSchema} />
+      <JsonLd data={websiteSchema} />
 
       <HeroSection tracks={tracks} />
       <UseCaseMarquee />

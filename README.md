@@ -62,13 +62,14 @@ Step 3 writes `fixtures/sample-track-index.results.csv` with the write-back colu
 | Command | What it does |
 |---|---|
 | `npm run dev` / `build` / `start` | Next.js |
-| `npm test` | 67 tests: sheet parsing, API auth, accounts & access rules, the real FFmpeg watermark pipeline, SEO helpers, backup restore and the full publish rules, run against real Postgres (PGlite, using the production migrations) **and** the local store |
+| `npm test` | 76 tests: sheet parsing, API auth, accounts & access rules, the real FFmpeg watermark pipeline, SEO helpers, backup restore and the full publish rules, run against real Postgres (PGlite, using the production migrations) **and** the local store |
 | `npm run typecheck` | TypeScript |
 | `npm run db:migrate` | Applies `db/migrations/*.sql` to `DATABASE_URL`. Idempotent — run on every deploy |
-| `npm run db:seed` | Loads the demo catalog through the publish pipeline. Idempotent |
+| `npm run db:seed` | Loads the demo catalog through the publish pipeline into the local store. Refuses a Postgres `DATABASE_URL` unless `SEED_DATABASE=yes` (it could overwrite live tracks) |
 | `npm run audio:watermark -- --in <folder> [--aiff] [--upload]` | Builds 128 kbps watermarked previews + masters and uploads them to the buckets ([details](docs/audio-and-access.md#2-watermarking-the-catalog-ffmpeg)) |
 | `npm run db:restore -- <backup.json>` | Loads a JSON backup into a new side table for inspection or recovery (see [cutover](docs/cutover.md#rollback)) |
-| `npm run import:sheet -- <file.csv>` | Bulk-publish test batch / Make.com stand-in (`--dry-run`, `--api <url>`) |
+| `npm run import:sheet -- <file.csv>` | Bulk-publish test batch / Make.com stand-in (`--dry-run`, `--api <url>`). Posts to `http://localhost:3000` unless `--api` names another target |
+| `npm run lint` | ESLint (`next/core-web-vitals`) |
 
 > Never run `npm run build` while `npm run dev` is running — both write to `.next/` and the dev server will start serving 500s with no styles. If that happens: stop the dev server, delete `.next`, and start it again.
 
@@ -126,7 +127,7 @@ The client creates the accounts (proposal §9); these are the configuration step
    ```bash
    DATABASE_URL="<direct connection string>" npm run db:migrate
    ```
-4. Optional, staging only: `DATABASE_URL="<staging direct>" npm run db:seed`
+4. Optional, staging only: `SEED_DATABASE=yes DATABASE_URL="<staging direct>" npm run db:seed`
 
 ### 2. Vercel
 
@@ -139,10 +140,10 @@ The client creates the accounts (proposal §9); these are the configuration step
 
 ### 3. Stripe
 
-1. Under **Developers → Webhooks**, add the endpoint `https://<domain>/api/stripe/webhook` with the events `checkout.session.completed`, `checkout.session.async_payment_succeeded` and `charge.refunded` (a full refund marks the order `refunded`).
+1. Under **Developers → Webhooks**, add the endpoint `https://<domain>/api/stripe/webhook` with the events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted` and `charge.refunded` (a full refund marks the order `refunded`). Full set-up, including the subscription price and billing portal: [docs/audio-and-access.md](docs/audio-and-access.md#6-stripe-set-up).
 2. Copy the signing secret into `STRIPE_WEBHOOK_SECRET`. Do this separately for test mode (staging) and live mode (production).
 
-Prices come from each track's sheet row. Checkout sessions are created server-side from the database, so the browser can never set a price. Paid orders are stored in `orders` and trigger a Brevo receipt. The receipt includes a download link when the track has a `full_audio_url` set, and otherwise says files will follow from the licensing team.
+Prices come from each track's sheet row. Checkout sessions are created server-side from the database, so the browser can never set a price. Paid orders are stored in `orders` and trigger a Brevo receipt. The receipt includes a signed, 14-day link to `/api/download` when the track has a master in the private bucket (Master WAV), and otherwise says files will follow from the licensing team.
 
 ### 4. Brevo
 
@@ -185,7 +186,7 @@ Follow **[docs/make-scenario.md](docs/make-scenario.md)**.
 ### Recommended sheet tweaks
 
 - Format the **Duration** column as *Plain text*. Otherwise Sheets turns `2:45` into a time of day. The API detects and corrects this, but it adds a warning.
-- Optionally add a **Last Error** column (R) and have Make.com write the API's `errorSummary` into it, so the reason is visible next to the row.
+- Columns **R–T** follow Track ID: **Last Error** (written by Make.com's error route), **Master WAV** and **Master AIFF** (object keys in the private masters bucket). The ready-made test sheet is `fixtures/make-demo-track-index.xlsx`.
 
 ## Brand & theme
 
@@ -205,16 +206,20 @@ Transactional emails use a light layout with the full logo, so they look right i
 ## Project layout
 
 ```
-db/migrations/           SQL migrations (schema: tracks, publish_events, orders)
+db/migrations/           SQL migrations (tracks, publish_events, orders; 004: users, subscriptions, login_tokens, downloads)
 docs/                    API reference, Make.com scenario
 fixtures/                sample Google Sheet export
-scripts/                 migrate, seed, import-sheet, restore-backup
+scripts/                 migrate, seed, import-sheet, restore-backup, watermark-catalog
 src/app/                 pages (home, tracks, genres, use-cases, bpm, pricing) + API routes
 src/components/brand/    logo lockup + mark
 src/components/ui/       CoverImage (next/image with a safe fallback for unknown hosts)
 src/lib/brand.ts         brand identity (name, domain, contact, logo paths)
 src/lib/catalog/         taxonomy: genres, statuses, tempo bands (mirrors the sheet dropdowns)
+src/lib/auth/            magic-link sign-in, signed sessions, access rules (subscription / license)
+src/lib/audio/           FFmpeg watermark pipeline building blocks
 src/lib/db/              repository interface, Postgres + local-file implementations
+src/lib/storage/         S3 / Backblaze B2 client, signed master links
+src/lib/stripe/          checkout orders, subscriptions, plan pricing
 src/lib/ingest/          sheet-row parsing/validation, publish service, CSV
 src/lib/seo/             slugs, hub SEO (data-driven copy, thin-hub noindex, breadcrumbs)
 src/lib/licensing.ts     license tiers (Standard / Commercial / Broadcast)
@@ -223,7 +228,8 @@ tests/                   node:test suites
 
 ## Known limitations
 
-- **Audio compression isn't automated.** The sheet's Audio URL is expected to already point at a compressed MP3 preview. The API checks that it resolves to audio, but doesn't transcode.
+- **Previews must be made with `npm run audio:watermark`.** The API only *warns* when an Audio URL is outside `PREVIEW_PUBLIC_BASE_URL`; it can't tell whether an arbitrary MP3 is watermarked.
+- **Stems and alt-mixes are not downloadable.** Licenses promise stems for Commercial and Broadcast; they are sent by the licensing team. Only the WAV/AIFF masters are served by `/api/download`.
 - **Stems, alt-mixes and cue-sheet metadata** (composer, publisher, ISRC) are not sheet columns. The page shows them when present in the database and hides them cleanly when absent. They can be supplied as extra JSON fields (`altMixes`, `stems`, `syncMeta`) or added as sheet columns later.
 - **The local JSON store is for development only.** In production, writes without `DATABASE_URL` fail loudly (HTTP 503) rather than silently losing data.
 - **No Make.com blueprint is included.** The scenario lives in the client's account, and an untested export would be worse than precise instructions. The guide lists every module and setting.

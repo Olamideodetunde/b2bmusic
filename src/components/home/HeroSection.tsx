@@ -20,8 +20,8 @@ const SLIDE_MS = 7000;
 
 const STATS = [
   { value: '100%', label: 'One-stop cleared' },
-  { value: '24/48', label: 'Bit / kHz WAV masters' },
-  { value: '6', label: 'Alt-mixes & cutdowns per track' },
+  { value: '24-bit', label: 'Full-quality masters' },
+  { value: 'WAV/AIFF', label: 'Delivered on every license' },
   { value: '$10', label: 'Perpetual license from' },
 ];
 
@@ -164,18 +164,18 @@ export function HeroSection({ tracks }: { tracks: Track[] }) {
 
             {/* Three fixed lines, sized per breakpoint so the longest ("music, cleared") never wraps */}
             <h1 className="mt-7 text-[2.5rem] sm:text-6xl lg:text-[3.5rem] xl:text-[4.75rem] font-bold tracking-[-0.035em] leading-[0.98] whitespace-nowrap">
-              <span className="line-mask"><span style={{ '--line-delay': '80ms' } as React.CSSProperties}>Commercial</span></span>
+              <span className="line-mask"><span style={{ '--line-delay': '80ms' } as React.CSSProperties}>Commercial</span></span>{' '}
               <span className="line-mask">
                 <span style={{ '--line-delay': '200ms' } as React.CSSProperties}>
                   music, <span className="text-navy-300">cleared</span>
                 </span>
-              </span>
+              </span>{' '}
               <span className="line-mask"><span className="text-navy-300" style={{ '--line-delay': '320ms' } as React.CSSProperties}>for every cut.</span></span>
             </h1>
 
             <p className="enter-up mt-8 max-w-lg text-base sm:text-lg text-slate-300 leading-relaxed" style={{ '--enter-delay': '450ms' } as React.CSSProperties}>
               Pre-cleared master recordings with isolated stems, broadcast cutdowns and cue-sheet metadata —
-              licensed per track, with no subscription.
+              licensed per track or unlocked with an all-access subscription.
             </p>
 
             <div className="enter-up mt-10 flex flex-wrap items-center gap-3" style={{ '--enter-delay': '560ms' } as React.CSSProperties}>

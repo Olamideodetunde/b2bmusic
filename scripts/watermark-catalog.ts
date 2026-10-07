@@ -14,7 +14,7 @@
  * Options:
  *   --out <dir>          working folder (default .audio-build/, gitignored)
  *   --watermark <file>   your voice ident / sound (default: WATERMARK_FILE, else a built-in chime)
- *   --every <s>          seconds between watermarks, 5–60 (default 12)
+ *   --every <s>          seconds between watermarks, 10–15 (default 12)
  *   --offset <s>         first watermark after this many seconds (default 3)
  *   --gain <dB>          watermark level, e.g. -10 (default -10)
  *   --bitrate <kbps>     preview bitrate (default 128)
@@ -78,6 +78,21 @@ async function main() {
     console.error(`No .wav/.aif/.aiff/.flac files in ${opt.input}`);
     process.exit(1);
   }
+  // Each file becomes masters/<slug>.wav. Two files with the same slug ("My Track.wav" and
+  // "my-track.flac") would silently overwrite each other's master — so stop before anything runs.
+  const bySlug = new Map<string, string[]>();
+  for (const f of files) {
+    const slug = toSlug(path.basename(f, path.extname(f)));
+    bySlug.set(slug, [...(bySlug.get(slug) ?? []), f]);
+  }
+  const problems = Array.from(bySlug.entries()).filter(([slug, fs]) => !slug || fs.length > 1);
+  if (problems.length) {
+    for (const [slug, fs] of problems) {
+      console.error(slug ? `  ✗ ${fs.join(', ')} would all become "${slug}"` : `  ✗ ${fs.join(', ')}: name has no Latin letters or digits`);
+    }
+    console.error('Rename these files so each has a unique name, then run again. Nothing was processed.');
+    process.exit(1);
+  }
   const dirs = { previews: path.join(opt.out, 'previews'), masters: path.join(opt.out, 'masters'), tmp: path.join(opt.out, 'tmp') };
   for (const d of Object.values(dirs)) await fs.mkdir(d, { recursive: true });
 
@@ -132,7 +147,8 @@ async function main() {
       manifest.push({
         File: file,
         Slug: slug,
-        Duration: `${Math.floor(info.durationSeconds / 60)}:${String(Math.round(info.durationSeconds % 60)).padStart(2, '0')}`,
+        // Round the total first, so 2:59.6 reads 3:00 rather than "2:60".
+        Duration: (s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`)(Math.round(info.durationSeconds)),
         'Audio URL': audioUrl,
         'Master WAV': keys.wav,
         'Master AIFF': keys.aiff,

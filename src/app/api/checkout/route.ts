@@ -5,7 +5,7 @@ import { isLicenseTier, tierInfo, tierPriceCents } from '@/lib/licensing';
 import { getSiteUrl, absoluteUrl } from '@/lib/utils';
 import { getViewer } from '@/lib/auth/server';
 import { downloadAccess } from '@/lib/auth/access';
-import { appOrigin } from '@/lib/auth/origin';
+import { appOrigin, isSameOriginRequest } from '@/lib/auth/origin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,6 +15,7 @@ export const dynamic = 'force-dynamic';
  * The price always comes from the database, never from the browser.
  */
 export async function POST(req: Request) {
+  if (!isSameOriginRequest(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   let body: any;
   try {
     body = await req.json();
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
         },
       ],
       metadata: { trackId: String(track.id), slug: track.slug, tier },
-      customer_creation: 'if_required',
+      customer_creation: 'always',
       ...(viewer ? { customer_email: viewer.user.email } : {}),
       allow_promotion_codes: true,
       // Via stripe-return: verifies the payment, records the order and signs the buyer in.

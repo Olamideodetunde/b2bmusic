@@ -186,7 +186,7 @@ export function DescriptionBlock({
         {[
           { icon: <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />, title: 'Direct Sync Indemnity', body: '100% controlled copyright. No secondary CMO fees, PRO collection demands, or third-party claims.' },
           { icon: <Radio className="w-3.5 h-3.5 text-brand-400" />, title: 'YouTube CID Safe', body: 'Channel and video whitelisting. No copyright strikes on client channels.' },
-          { icon: <Layers className="w-3.5 h-3.5 text-slate-400" />, title: 'Stems & Cutdowns', body: '24-bit/48kHz WAV master, isolated stems, and :30/:60 cuts for direct NLE drop.' },
+          { icon: <Layers className="w-3.5 h-3.5 text-slate-400" />, title: 'Stems & Cutdowns', body: '24-bit WAV & AIFF master; isolated stems and :30/:60 cuts where available.' },
         ].map((item) => (
           <div key={item.title} className="flex items-start gap-2">
             <span className="mt-0.5">{item.icon}</span>

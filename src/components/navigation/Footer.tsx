@@ -33,11 +33,11 @@ export function Footer({ genres, useCases, tempos }: { genres: FooterLink[]; use
         <div className="grid grid-cols-2 md:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))] gap-x-8 gap-y-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1 max-w-xs">
-            <Link href="/" className="inline-flex items-center" aria-label={`${BRAND.wordmark} — home`}>
-              <Logo size="md" />
+            <Link href="/" className="inline-flex items-center">
+              <Logo size="md" /><span className="sr-only"> (home)</span>
             </Link>
             <p className="mt-5 text-sm text-slate-400 leading-relaxed">
-              Pre-cleared production music with stems, cutdowns and cue-sheet metadata — licensed per track for agencies,
+              Pre-cleared production music with stems, cutdowns and cue-sheet metadata — licensed per track or all-access for agencies,
               editors and brands.
             </p>
             <div className="mt-5 inline-flex items-center gap-2 text-xs text-emerald-400">
@@ -48,7 +48,7 @@ export function Footer({ genres, useCases, tempos }: { genres: FooterLink[]; use
 
           {COLUMNS.map(col => (
             <div key={col.heading}>
-              <h4 className="label-xs !text-slate-500 mb-5">{col.heading}</h4>
+              <h2 className="label-xs !text-slate-500 mb-5">{col.heading}</h2>
               <ul className="space-y-3">
                 {col.links.map(link => (
                   <li key={link.href}>

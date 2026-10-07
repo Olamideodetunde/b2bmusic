@@ -83,14 +83,19 @@ for (const [name, make] of [['postgres (PGlite)', pgliteRepo], ['file store', fi
       if (!r.ok) assert.equal(r.errors[0].field, 'description');
     });
 
-    test('keywords that slugify identically get a -2 suffix', async () => {
+    test('a keyword that differs only by case or punctuation is the same search — rejected', async () => {
       const r = await publishTrack(repo, {
         ...rows[3], Title: 'Silicon Sunset (Alt)', 'Target Keyword': 'LoFi Hip-Hop Tech Explainer Background Music!',
         Description: 'An alternate cut with brighter keys and a lighter kick, for daytime explainer edits.',
       }, opts);
-      assert.ok(r.ok, r.ok ? '' : r.errorSummary);
-      assert.equal(r.slug, 'lofi-hip-hop-tech-explainer-background-music-2');
-      assert.ok(r.warnings.some(w => /was taken/.test(w)));
+      assert.equal(r.ok, false, 'two pages must never compete for the same search');
+      if (!r.ok) assert.equal(r.errors[0].field, 'targetKeyword');
+    });
+
+    test('publishing refreshes the hub index pages', async () => {
+      const r = await publishTrack(repo, rows[0], opts);
+      assert.ok(r.ok);
+      if (r.ok) for (const p of ['/genres', '/use-cases', '/bpm']) assert.ok(r.paths.includes(p), p);
     });
 
     test('Draft rows, unknown Track IDs and dead audio links are refused', async () => {

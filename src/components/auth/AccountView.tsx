@@ -16,6 +16,7 @@ export function AccountView() {
   const ids = me.purchasedTrackIds.join(',');
   useEffect(() => {
     if (!ids) { setTracks([]); return; }
+    setTracks(null);
     fetch(`/api/catalog?ids=${ids}`)
       .then(r => r.json())
       .then(d => setTracks(d.tracks ?? []))
@@ -76,7 +77,7 @@ export function AccountView() {
                 Subscribe · {formatPlan(me.plan)}
               </button>
             )}
-            {(me.subscription || me.purchasedTrackIds.length > 0) && (
+            {me.hasBillingAccount && (
               <button onClick={openBillingPortal} className="h-10 px-4 rounded-full border border-white/15 text-sm text-slate-200 hover:text-white hover:border-white/30 inline-flex items-center gap-2">
                 <CreditCard className="w-4 h-4" /> Billing
               </button>

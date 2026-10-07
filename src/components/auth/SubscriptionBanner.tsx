@@ -24,7 +24,7 @@ export function SubscriptionBanner() {
               Unlock the entire catalog for <span className="font-mono text-brand-400">{formatPlan(me.plan)}</span>
             </h2>
             <ul className="mt-4 grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm text-slate-300">
-              {['Every track, including new releases', 'Unlimited WAV & AIFF master downloads', 'Sync license on everything you download', 'Cancel anytime from your account'].map(f => (
+              {['Every track, including new releases', 'Unlimited WAV & AIFF master downloads (fair use)', 'Sync license on everything you download', 'Cancel anytime from your account'].map(f => (
                 <li key={f} className="flex gap-2"><Check className="w-4 h-4 mt-0.5 text-brand-400 shrink-0" />{f}</li>
               ))}
             </ul>

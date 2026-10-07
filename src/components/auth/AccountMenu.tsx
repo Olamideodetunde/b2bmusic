@@ -80,7 +80,7 @@ export function AccountMenu() {
               <InfinityIcon className="w-3.5 h-3.5 text-brand-400" /> Unlock everything · {formatPlan(me.plan)}
             </button>
           )}
-          {(me.subscription || me.purchasedTrackIds.length > 0) && (
+          {me.hasBillingAccount && (
             <button onClick={() => { setOpen(false); openBillingPortal(); }} className={item} role="menuitem">
               <CreditCard className="w-3.5 h-3.5 text-slate-500" /> Billing &amp; invoices
             </button>

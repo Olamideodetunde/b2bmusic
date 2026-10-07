@@ -41,6 +41,8 @@ const config: Config = {
           950: "#34240f",
         },
         // Navy: the logo's "Global…AudioHolding" ink (#102038), deepened for surfaces.
+        // Muted text: Tailwind's slate-500 (#64748b) is only ~4.1:1 on navy; this is ≥ 4.5:1 on navy-800…950.
+        slate: { 500: "#7c8aa0" },
         navy: {
           950: "#050b17",
           900: "#081223",

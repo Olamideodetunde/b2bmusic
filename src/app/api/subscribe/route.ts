@@ -4,7 +4,7 @@ import { getRepository } from '@/lib/db';
 import { getViewer } from '@/lib/auth/server';
 import { getPlan } from '@/lib/stripe/subscriptions';
 import { safeNextPath } from '@/lib/auth/session';
-import { appOrigin } from '@/lib/auth/origin';
+import { appOrigin, isSameOriginRequest } from '@/lib/auth/origin';
 import { readJsonBody } from '@/lib/api/auth';
 
 export const runtime = 'nodejs';
@@ -16,6 +16,7 @@ export const dynamic = 'force-dynamic';
  * with the email they used at checkout.
  */
 export async function POST(req: Request) {
+  if (!isSameOriginRequest(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const parsed = await readJsonBody(req, 4 * 1024);
   if ('error' in parsed) return parsed.error;
   const next = safeNextPath(parsed.body?.next);

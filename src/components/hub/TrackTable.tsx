@@ -93,7 +93,7 @@ export function TrackTable({ tracks, showHeader = true, className }: TrackTableP
           active && 'text-slate-200',
           cls,
         )}
-        aria-label={`Sort by ${k}`}
+        aria-label={`${typeof children === 'string' ? children : k} — sort`}
       >
         {children}
         {active && (sort?.dir === 'asc' ? <ArrowUp className="w-2.5 h-2.5" /> : <ArrowDown className="w-2.5 h-2.5" />)}
@@ -102,9 +102,9 @@ export function TrackTable({ tracks, showHeader = true, className }: TrackTableP
   };
 
   return (
-    <div className={cn('border-y border-white/[0.06]', className)} role="table" aria-label="Tracks">
+    <div className={cn('border-y border-white/[0.06]', className)} aria-label="Tracks">
       {showHeader && (
-        <div className={cn(GRID, 'h-8 px-3 border-b border-white/[0.06] bg-navy-950')} role="row">
+        <div className={cn(GRID, 'h-8 px-3 border-b border-white/[0.06] bg-navy-950')}>
           <span className="label-xs text-right">#</span>
           <span />
           <SortHeader k="title">Title</SortHeader>
@@ -165,7 +165,6 @@ export function TrackRow({ track, index, queue }: TrackRowProps) {
 
   return (
     <div
-      role="row"
       onDoubleClick={handlePlay}
       className={cn(
         GRID,
@@ -175,31 +174,31 @@ export function TrackRow({ track, index, queue }: TrackRowProps) {
           : 'hover:bg-navy-900/60',
       )}
     >
-      {/* # / play */}
-      <button
-        onClick={handlePlay}
-        className="relative w-7 h-7 inline-flex items-center justify-center rounded-full justify-self-end"
-        aria-label={isCurrentlyPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
-      >
+      {/* # / play — the row number sits beside (not inside) the button, so the button's
+          accessible name is exactly its visible label: "Play <title>". */}
+      <div className="relative w-7 h-7 justify-self-end">
         <span
           className={cn(
-            'text-[11px] font-mono tabular-nums text-slate-500 group-hover:opacity-0',
+            'absolute inset-0 inline-flex items-center justify-center text-[11px] font-mono tabular-nums text-slate-500 pointer-events-none group-hover:opacity-0',
             isCurrent && 'opacity-0',
           )}
+          aria-hidden
         >
           {index}
         </span>
-        <span
+        <button
+          onClick={handlePlay}
           className={cn(
             'absolute inset-0 inline-flex items-center justify-center rounded-full transition-colors',
             isCurrent
               ? 'bg-brand-600 text-white'
-              : 'opacity-0 group-hover:opacity-100 bg-white/[0.08] text-white hover:bg-brand-600',
+              : 'opacity-0 focus-visible:opacity-100 group-hover:opacity-100 bg-white/[0.08] text-white hover:bg-brand-600',
           )}
+          aria-label={isCurrentlyPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
         >
           {isCurrentlyPlaying ? <Pause className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current ml-px" />}
-        </span>
-      </button>
+        </button>
+      </div>
 
       {/* Art */}
       {track.coverImageUrl ? (
@@ -225,7 +224,7 @@ export function TrackRow({ track, index, queue }: TrackRowProps) {
           {track.title}
         </Link>
         <div className="flex items-center gap-1.5 text-xs text-slate-500 truncate mt-px">
-          <span className="truncate text-slate-400">{track.syncMeta?.composer || 'B2B Music Sync'}</span>
+          <span className="truncate text-slate-400">{track.syncMeta?.composer || 'In-house'}</span>
           <span className="text-navy-500">·</span>
           <Link href={`/genres/${toSlug(track.genre)}`} className="truncate hover:text-brand-400 transition-colors">
             {track.genre}

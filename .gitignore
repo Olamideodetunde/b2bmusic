@@ -37,3 +37,15 @@ masters/
 *.aiff
 *.flac
 *.mp3
+
+# Deployment / local tooling / more audio and database dump formats
+.vercel/
+.claude/settings.local.json
+coverage/
+.env.production
+.env.development
+*.ogg
+*.m4a
+*.aac
+*.dump
+*.sql.gz

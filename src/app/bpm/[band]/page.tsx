@@ -12,6 +12,7 @@ import { catalogStats, getSiteUrl, cn } from '@/lib/utils';
 import { BRAND } from '@/lib/brand';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { breadcrumbSchema, collectionSchema, fitTitle, hubMetaDescription, hubRobots, hubSummary, type Crumb } from '@/lib/seo/hubs';
+import { socialMeta } from '@/lib/seo/meta';
 
 interface BpmPageProps {
   params: { band: string };
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: BpmPageProps): Promise<Metada
     description,
     alternates: { canonical: url },
     robots: hubRobots(tracks.length),
-    openGraph: { title, description, url, siteName: BRAND.name, type: 'website' },
+    ...socialMeta({ title, description, url, image: '/banners/banner-stage-lights.jpg', imageAlt: `${band.label} production music` }),
   };
 }
 

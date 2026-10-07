@@ -209,7 +209,7 @@ export class FileRepository implements TrackRepository {
     if (!user) {
       user = { id: users.reduce((m, u) => Math.max(m, u.id), 0) + 1, email: e, stripeCustomerId: stripeCustomerId ?? null, createdAt: now() };
       users.push(user);
-    } else if (stripeCustomerId) {
+    } else if (stripeCustomerId && !user.stripeCustomerId) {
       user.stripeCustomerId = stripeCustomerId;
     }
     await save(store);

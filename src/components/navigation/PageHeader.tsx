@@ -29,6 +29,7 @@ export function PageHeader({ crumbs, eyebrow, title, description, image, stats, 
           <CoverImage
             fill
             priority
+            quality={55}
             src={image}
             alt=""
             className="object-cover grayscale contrast-[1.15] brightness-[0.45] motion-safe:animate-kenburns"

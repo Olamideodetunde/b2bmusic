@@ -26,7 +26,8 @@ export function receiptDownloadUrl(trackId: number, email: string): string {
  * Returns true when this call created the order.
  */
 export async function recordPaidCheckout(repo: TrackRepository, session: Stripe.Checkout.Session): Promise<boolean> {
-  if (session.mode !== 'payment' || session.payment_status !== 'paid') return false;
+  const settled = session.payment_status === 'paid' || session.payment_status === 'no_payment_required';
+  if (session.mode !== 'payment' || !settled) return false;
   const trackId = Number(session.metadata?.trackId);
   const tier = session.metadata?.tier;
   if (!Number.isInteger(trackId) || !isLicenseTier(tier)) {

@@ -39,7 +39,7 @@ function StemsPanel({ track }: { track: Track }) {
 
   return (
     <div>
-      <PanelHeader title={`${track.title} — Stems`} meta="24-bit / 48kHz WAV" />
+      <PanelHeader title={`${track.title} — Stems`} meta="24-bit WAV" />
       <div className="space-y-2">
         {LANES.map((lane, li) => {
           const audible = solo ? solo === lane : !muted.includes(lane);

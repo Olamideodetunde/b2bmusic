@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe/client';
 import { getRepository } from '@/lib/db';
 import { getViewer } from '@/lib/auth/server';
-import { appOrigin } from '@/lib/auth/origin';
+import { appOrigin, isSameOriginRequest } from '@/lib/auth/origin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /** POST /api/billing-portal → { url } — Stripe's hosted page for cards, invoices and cancelling. */
 export async function POST(req: Request) {
+  if (!isSameOriginRequest(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const viewer = await getViewer();
   if (!viewer) return NextResponse.json({ error: 'Sign in first' }, { status: 401 });
   const user = await getRepository().findUserById(viewer.user.id);

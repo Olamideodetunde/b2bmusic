@@ -15,7 +15,7 @@ export function PricingTeaser({ fromPrices }: { fromPrices: Record<LicenseTierKe
         <SectionHeading
           eyebrow="Licensing"
           title={<>One track. One fee. <span className="text-navy-300">Yours to keep.</span></>}
-          description="Per-track perpetual licenses. No subscription, no renewal dates, no usage audits."
+          description="A perpetual license for a single track, or an all-access subscription for the whole catalog. No usage audits."
           aside={<ArrowLink href="/pricing">Compare all rights</ArrowLink>}
         />
 

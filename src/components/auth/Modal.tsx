@@ -18,12 +18,16 @@ export function Modal({
   className?: string;
 }) {
   const panel = useRef<HTMLDivElement>(null);
+  // Callers pass inline arrows; keeping the latest in a ref means a parent re-render
+  // (a toast, a refresh) doesn't re-run the effect and yank focus mid-typing.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
     const previous = document.activeElement as HTMLElement | null;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
       if (e.key === 'Tab' && panel.current) {
         // Keep Tab inside the dialog.
         const focusable = panel.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])');
@@ -37,13 +41,16 @@ export function Modal({
     document.addEventListener('keydown', onKey);
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    requestAnimationFrame(() => panel.current?.querySelector<HTMLElement>('input, button[data-autofocus], button')?.focus());
+    // The panel is already in the DOM when this effect runs. A selector list matches in DOM
+    // order (the Close button would always win), so look up in priority order.
+    const p = panel.current;
+    (p?.querySelector<HTMLElement>('[data-autofocus]:not([disabled])') ?? p?.querySelector<HTMLElement>('input') ?? p?.querySelector<HTMLElement>('button'))?.focus();
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = overflow;
       previous?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
   return (

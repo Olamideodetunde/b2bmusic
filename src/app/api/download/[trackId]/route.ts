@@ -49,7 +49,7 @@ export async function GET(req: Request, { params }: { params: { trackId: string 
   const trackId = Number(params.trackId);
 
   const repo = getRepository();
-  const track = Number.isInteger(trackId) && trackId > 0 ? await repo.findById(trackId) : null;
+  const track = Number.isInteger(trackId) && trackId > 0 && trackId <= 2_147_483_647 ? await repo.findById(trackId) : null;
 
   const fail = (reason: Failure) => {
     if (json || !track) return NextResponse.json({ error: reason, message: MESSAGES[reason] }, { status: STATUS[reason], headers: { 'Cache-Control': 'no-store' } });

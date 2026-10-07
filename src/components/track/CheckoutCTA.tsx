@@ -72,6 +72,7 @@ function CheckoutCTAContent({ track, className = '' }: CheckoutCTAProps) {
       }
       if (res.status === 409 && data.access) {
         // Already covered (subscription or earlier purchase): show Download instead of charging again.
+        setError(data.error ?? 'You already have access to this track.');
         await refresh();
         setLoading(false);
         return;
@@ -227,7 +228,7 @@ function CheckoutCTAContent({ track, className = '' }: CheckoutCTAProps) {
         ) : (
           <>
             License &amp; download
-            <span className="font-mono tabular-nums opacity-90">{formatPrice(tierPriceCents(track, selectedTier))}</span>
+            <span className="font-mono tabular-nums">{formatPrice(tierPriceCents(track, selectedTier))}</span>
             <ArrowRight className="w-4 h-4" />
           </>
         )}

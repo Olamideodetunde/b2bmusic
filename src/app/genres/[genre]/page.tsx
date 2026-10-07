@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { getAllTracks, getTracksByGenre } from '@/lib/db';
 import { CatalogExplorer } from '@/components/hub/CatalogExplorer';
@@ -10,6 +10,7 @@ import { genreImage } from '@/lib/imagery';
 import { catalogStats, getSiteUrl, toSlug } from '@/lib/utils';
 import { BRAND } from '@/lib/brand';
 import { breadcrumbSchema, collectionSchema, fitTitle, hubMetaDescription, hubRobots, hubSummary, type Crumb } from '@/lib/seo/hubs';
+import { socialMeta } from '@/lib/seo/meta';
 
 interface GenrePageProps {
   params: { genre: string };
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: GenrePageProps): Promise<Meta
   if (tracks.length === 0) return { title: 'Not found' };
   const siteUrl = getSiteUrl();
   const genre = tracks[0].genre;
-  const url = `${siteUrl}/genres/${params.genre}`;
+  const url = `${siteUrl}/genres/${toSlug(genre)}`;
   const title = `${genre} Production Music`;
   const description = hubMetaDescription(`License ${genre.toLowerCase()} production music.`, tracks, { omit: 'genre' });
   const image = `${siteUrl}${genreImage(genre)}`;
@@ -38,14 +39,14 @@ export async function generateMetadata({ params }: GenrePageProps): Promise<Meta
     description,
     alternates: { canonical: url },
     robots: hubRobots(tracks.length),
-    openGraph: { title, description, url, siteName: BRAND.name, type: 'website', images: [{ url: image, alt: `${genre} music catalog` }] },
-    twitter: { card: 'summary_large_image', title, description, images: [image] },
+    ...socialMeta({ title, description, url, image, imageAlt: `${genre} music catalog` }),
   };
 }
 
 export default async function GenreHubPage({ params }: GenrePageProps) {
   const tracks = await getTracksByGenre(params.genre);
   if (tracks.length === 0) notFound();
+  if (params.genre !== toSlug(tracks[0].genre)) permanentRedirect(`/genres/${toSlug(tracks[0].genre)}`);
 
   const siteUrl = getSiteUrl();
   const url = `${siteUrl}/genres/${params.genre}`;

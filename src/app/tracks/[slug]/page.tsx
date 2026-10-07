@@ -16,6 +16,7 @@ import { formatDuration, getSiteUrl, parseMusicalKey, toSlug, excerpt, titleCase
 import { BRAND } from '@/lib/brand';
 import { CoverImage } from '@/components/ui/CoverImage';
 import { fitTitle } from '@/lib/seo/hubs';
+import { socialMeta } from '@/lib/seo/meta';
 
 interface PageProps {
   params: { slug: string };
@@ -41,10 +42,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? `${track.title} – ${titleCase(keyword)}`
     : `${track.title} – Commercial Sync License`;
   const title = fitTitle(pageTitle);
-  const suffix = ' Pre-cleared sync license with WAV master & stems.';
+  const suffix = ' Pre-cleared sync license, WAV & AIFF master.';
   const description = `${excerpt(track.description, 158 - suffix.length)}${suffix}`;
-
-  const coverUrl = track.coverImageUrl ? absoluteUrl(track.coverImageUrl, siteUrl) : `${siteUrl}${BRAND.ogImagePath}`;
 
   const keywords = [
     track.targetKeyword,
@@ -73,20 +72,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         'max-snippet': -1,
       },
     },
-    openGraph: {
+    // The 1200×630 card comes from ./opengraph-image.tsx and ./twitter-image.tsx.
+    ...socialMeta({
       title: pageTitle,
       description,
-      url: `${siteUrl}/tracks/${track.slug}`,
-      siteName: BRAND.name,
+      url: `/tracks/${track.slug}`,
       type: 'music.song',
-      images: [{ url: coverUrl, width: 1200, height: 630, alt: track.title }],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: pageTitle,
-      description,
-      images: [coverUrl],
-    },
+      image: `/tracks/${track.slug}/opengraph-image`,
+      imageIsCard: true,
+      imageAlt: `${track.title} – ${track.genre}, ${track.bpm} BPM`,
+    }),
   };
 }
 
@@ -126,7 +121,7 @@ export default async function TrackLandingPage({ params }: PageProps) {
         {track.coverImageUrl && (
           <div className="absolute inset-0" aria-hidden>
             {/* Blurred to 3xl anyway, so a small, low-quality variant is plenty */}
-            <CoverImage fill src={track.coverImageUrl} alt="" sizes="256px" quality={40} className="object-cover scale-125 blur-3xl opacity-30 saturate-[0.8]" />
+            <CoverImage fill priority src={track.coverImageUrl} alt="" sizes="256px" quality={40} className="object-cover scale-125 blur-3xl opacity-30 saturate-[0.8]" />
             <div className="absolute inset-0 bg-gradient-to-b from-navy-950/40 via-navy-950/70 to-navy-950" />
           </div>
         )}
@@ -167,6 +162,11 @@ export default async function TrackLandingPage({ params }: PageProps) {
               >
                 {track.title}
               </h1>
+              {track.targetKeyword && track.targetKeyword.toLowerCase() !== track.title.toLowerCase() && (
+                <p className="enter-up mt-3 text-lg sm:text-xl font-medium text-navy-300" style={{ '--enter-delay': '110ms' } as React.CSSProperties}>
+                  {titleCase(track.targetKeyword)}
+                </p>
+              )}
               {track.syncMeta?.composer && (
                 <p className="enter-up mt-3 text-base text-slate-400" style={{ '--enter-delay': '140ms' } as React.CSSProperties}>
                   by <span className="text-slate-200">{track.syncMeta.composer}</span>

@@ -38,14 +38,14 @@ const STEREO = `aformat=sample_rates=${SR}:channel_layouts=stereo`;
 
 export function ffmpegPath(): string {
   if (process.env.FFMPEG_PATH) return process.env.FFMPEG_PATH;
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const bundled = require('ffmpeg-static') as string | null;
   if (!bundled) throw new Error('No FFmpeg binary: install ffmpeg-static or set FFMPEG_PATH');
   return bundled;
 }
 
 export function validateOptions(o: WatermarkOptions): void {
-  if (!(o.everySeconds >= 5 && o.everySeconds <= 60)) throw new Error('--every must be between 5 and 60 seconds');
+  // The brief: a watermark every 10–15 seconds. Wider gaps leave clean, re-usable stretches.
+  if (!(o.everySeconds >= 10 && o.everySeconds <= 15)) throw new Error('--every must be between 10 and 15 seconds');
   if (!(o.offsetSeconds >= 0 && o.offsetSeconds < o.everySeconds)) throw new Error('--offset must be ≥ 0 and shorter than --every');
   if (!(o.gainDb <= 6 && o.gainDb >= -40)) throw new Error('--gain must be between -40 and +6 dB');
   if (![96, 112, 128, 160, 192].includes(o.bitrateKbps)) throw new Error('--bitrate must be 96, 112, 128, 160 or 192');

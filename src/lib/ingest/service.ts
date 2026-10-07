@@ -84,7 +84,7 @@ export async function checkAudioUrl(url: string, fetchImpl: typeof fetch = fetch
 /** Every page that shows this track — refreshed on publish, nothing else. */
 export function affectedPaths(before: Track | null, after: Track): string[] {
   // (sitemap.xml is rendered per request, so it needs no revalidation)
-  const paths = new Set<string>(['/', '/pricing', `/tracks/${after.slug}`]);
+  const paths = new Set<string>(['/', '/pricing', '/genres', '/use-cases', '/bpm', `/tracks/${after.slug}`]);
   for (const t of [before, after]) {
     if (!t) continue;
     paths.add(`/genres/${toSlug(t.genre)}`);
@@ -105,13 +105,13 @@ export async function publishTrack(
   const parsed = parseTrackRow(raw);
   const warnings = [...parsed.warnings];
 
+  if (parsed.status === 'Draft') {
+    return reject(409, [{ field: 'status', message: 'Row is still Draft — set Status to "Ready" to publish' }], warnings);
+  }
   if (parsed.errors.length > 0 || !parsed.input) {
     const result = reject(422, parsed.errors, warnings);
     await repo.logEvent({ trackId: parsed.trackId, action: 'rejected', ok: false, message: result.ok ? '' : result.errorSummary, payload: raw });
     return result;
-  }
-  if (parsed.status === 'Draft') {
-    return reject(409, [{ field: 'status', message: 'Row is still Draft — set Status to "Ready" to publish' }], warnings);
   }
 
   const input = parsed.input;
@@ -133,7 +133,11 @@ export async function publishTrack(
   }
 
   // ── Duplicate-content guards (SEO: no competing or doorway pages) ──
-  const sameKeyword = (await repo.findByTargetKeyword(input.targetKeyword)).filter(t => t.id !== existing?.id);
+  const wantedBase = generateSlug(input.targetKeyword);
+  const sameKeyword = [
+    ...(await repo.findByTargetKeyword(input.targetKeyword)),
+    ...(await repo.listPublished()).filter(t => generateSlug(t.targetKeyword) === wantedBase),
+  ].filter(t => t.id !== existing?.id);
   if (sameKeyword.length > 0) {
     const other = sameKeyword[0];
     return reject(409, [{
@@ -172,18 +176,26 @@ export async function publishTrack(
     const base = generateSlug(input.targetKeyword);
     if (!base) return reject(422, [{ field: 'targetKeyword', message: 'Target Keyword has no letters or numbers to build a URL from' }], warnings);
     let created: Track | null = null;
+    let mergedIntoWinner = false;
     for (let attempt = 0; attempt < 5 && !created; attempt++) {
       const slug = makeUniqueSlug(base, await repo.slugsLike(base));
       try {
         created = await repo.insert(input, slug);
         if (slug !== base) warnings.push(`URL /tracks/${base} was taken, so this track was published at /tracks/${slug}`);
       } catch (err) {
-        if (!(err instanceof SlugConflictError)) throw err; // concurrent publish grabbed it — retry
+        if (!(err instanceof SlugConflictError)) throw err;
+        const winner = await repo.findByKeywordAndTitle(input.targetKeyword, input.title);
+        if (winner) {
+          created = await repo.update(winner.id, input);
+          mergedIntoWinner = true;
+          warnings.push(`A concurrent request had just created this track (#${winner.id}); updated it instead of duplicating it.`);
+        }
+        // otherwise another track took the slug — loop and pick the next free one
       }
     }
     if (!created) throw new Error(`Could not allocate a unique slug for "${base}"`);
     track = created;
-    action = 'created';
+    action = mergedIntoWinner ? 'updated' : 'created';
   }
 
   const layoutChanged = nonZeroGenres(await repo.genreCounts()) !== genresBefore;

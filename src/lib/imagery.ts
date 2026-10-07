@@ -33,6 +33,6 @@ export function genreImage(genre: string): string {
   return GENRE_IMAGES[genre] ?? pick(genre);
 }
 
-export function useCaseImage(slug: string): string {
+export function imageForUseCase(slug: string): string {
   return pick(slug);
 }

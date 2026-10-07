@@ -6,6 +6,7 @@ import { JsonLd } from '@/components/seo/JsonLd';
 import { BPM_BANDS } from '@/lib/catalog/taxonomy';
 import { getSiteUrl } from '@/lib/utils';
 import { breadcrumbSchema, hubSummary, type Crumb } from '@/lib/seo/hubs';
+import { socialMeta } from '@/lib/seo/meta';
 
 export const revalidate = 3600;
 
@@ -14,7 +15,7 @@ const DESCRIPTION = 'Slow, mid-tempo or fast: browse pre-cleared production musi
 
 export function generateMetadata(): Metadata {
   const url = `${getSiteUrl()}/bpm`;
-  return { title: TITLE, description: DESCRIPTION, alternates: { canonical: url }, openGraph: { title: TITLE, description: DESCRIPTION, url } };
+  return { title: TITLE, description: DESCRIPTION, alternates: { canonical: url }, ...socialMeta({ title: TITLE, description: DESCRIPTION, url }) };
 }
 
 export default async function TempoIndexPage() {

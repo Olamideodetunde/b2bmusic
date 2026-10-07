@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         if (subId) await syncSubscription(repo, subId, session.customer_details?.email);
         return NextResponse.json({ received: true, subscription: subId ?? null });
       }
-      if (session.payment_status !== 'paid') return NextResponse.json({ received: true, pending: true });
+      if (session.payment_status === 'unpaid') return NextResponse.json({ received: true, pending: true });
       const recorded = await recordPaidCheckout(repo, session);
       return NextResponse.json({ received: true, recorded });
     }

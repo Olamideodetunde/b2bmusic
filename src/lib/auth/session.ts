@@ -20,16 +20,24 @@ export interface SessionPayload {
 
 let warned = false;
 
-/** The signing secret. Uses SESSION_SECRET, with a deterministic fallback derived from DATABASE_URL / INGESTION_API_KEY. */
+/**
+ * The signing secret. Production REQUIRES SESSION_SECRET (≥ 32 random chars) and fails
+ * closed without it — sign-in returns 503 rather than running on a guessable key.
+ *
+ * Never derive it from other configuration (DATABASE_URL, API keys): anyone who ever saw
+ * those values could then forge a session for any customer, and this project's database
+ * URL has already been exposed once.
+ */
 export function sessionSecret(): string | null {
   const secret = process.env.SESSION_SECRET;
   if (secret && secret.length >= 32) return secret;
-  // If not explicitly set, derive deterministically from DATABASE_URL or INGESTION_API_KEY so auth doesn't fail closed in production
-  const fallbackSource = process.env.DATABASE_URL || process.env.INGESTION_API_KEY || process.env.REVALIDATION_SECRET;
-  if (fallbackSource) {
-    return createHash('sha256').update(`gb2b-session-secret:${fallbackSource}`).digest('hex');
+  if (process.env.NODE_ENV === 'production') {
+    if (!warned) {
+      console.error('[auth] SESSION_SECRET is missing or shorter than 32 characters — sign-in is disabled.');
+      warned = true;
+    }
+    return null;
   }
-  if (process.env.NODE_ENV === 'production') return null;
   if (!warned) {
     console.warn('[auth] SESSION_SECRET is not set — using an insecure development secret.');
     warned = true;
@@ -109,8 +117,20 @@ export function isValidEmail(email: unknown): email is string {
   return typeof email === 'string' && email.length <= 254 && /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[a-z]{2,}$/i.test(email.trim());
 }
 
-/** Only same-site relative paths are allowed as post-login redirects (no open redirect). */
+/**
+ * Only same-site relative paths are allowed as post-login redirects (no open redirect).
+ * Validates by actually resolving the path: browsers strip tabs/newlines and treat a
+ * backslash like "/", so "/<TAB>/evil.com" would otherwise become https://evil.com/.
+ */
 export function safeNextPath(next: unknown, fallback = '/'): string {
-  if (typeof next !== 'string' || !next.startsWith('/') || next.startsWith('//') || next.includes('\\')) return fallback;
-  return next.slice(0, 500);
+  if (typeof next !== 'string' || !next.startsWith('/') || next.length > 500) return fallback;
+  if (/[\u0000-\u001f\u007f\\]/.test(next)) return fallback;
+  const base = 'https://same-site.invalid';
+  try {
+    const url = new URL(next, base);
+    if (url.origin !== base) return fallback;
+    return url.pathname + url.search + url.hash;
+  } catch {
+    return fallback;
+  }
 }

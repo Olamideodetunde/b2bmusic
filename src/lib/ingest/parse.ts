@@ -1,6 +1,6 @@
-import type { SyncMeta, TrackInput } from '../db/types';
+import type { AltMix, StemTrack, SyncMeta, TrackInput } from '../db/types';
 import { GENRES, SHEET_STATUSES, canonicalGenre, type SheetStatus } from '../catalog/taxonomy';
-import { parseMusicalKey } from '../utils';
+import { parseMusicalKey, toSlug } from '../utils';
 import { isValidObjectKey } from '../storage/keys';
 
 export interface FieldError {
@@ -150,7 +150,8 @@ export function parseTrackRow(raw: Record<string, unknown>): ParsedRow {
   let trackId: number | null = null;
   if (!isBlank(f.trackId)) {
     const n = Number(str(f.trackId));
-    if (Number.isInteger(n) && n > 0) trackId = n;
+    // Postgres INTEGER tops out at 2,147,483,647; anything larger is an edited cell, not an ID.
+    if (Number.isInteger(n) && n > 0 && n <= 2_147_483_647) trackId = n;
     else errors.push({ field: 'trackId', message: 'Track ID must be the number written back by the system — do not edit it' });
   }
 
@@ -213,6 +214,9 @@ export function parseTrackRow(raw: Record<string, unknown>): ParsedRow {
     if (list.length > 12) errors.push({ field, message: 'Use 12 tags or fewer' });
     if (list.some(t => t.length > 60)) errors.push({ field, message: 'Each tag must be 60 characters or fewer' });
   }
+  // Every use case becomes a hub URL (/use-cases/<slug>); a tag with no Latin letters or digits has none.
+  const unlinkable = useCases.filter(u => !toSlug(u));
+  if (unlinkable.length) errors.push({ field: 'useCases', message: `Use case "${unlinkable[0]}" needs Latin letters or numbers (it becomes a page URL)` });
 
   // ── URLs ──
   need('audioUrl', 'Audio URL');
@@ -268,6 +272,28 @@ export function parseTrackRow(raw: Record<string, unknown>): ParsedRow {
 
   const vocal = str(f.vocalType).toLowerCase();
   const vocalType = (['instrumental', 'female', 'male'] as const).find(v => v === vocal);
+  if (vocal && !vocalType) errors.push({ field: 'vocalType', message: 'Vocal Type must be instrumental, female or male' });
+
+  // ── Optional enrichment JSON: validate the shape so a typo can't break the track page ──
+  const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+  const enrichment = <T,>(field: 'altMixes' | 'stems' | 'syncMeta', check: (v: unknown) => boolean, hint: string): T | undefined => {
+    if (isBlank(f[field])) return undefined;
+    const value = parseJsonField<unknown>(f[field]);
+    if (value === undefined || !check(value)) {
+      errors.push({ field, message: `${field} must be ${hint}` });
+      return undefined;
+    }
+    return value as T;
+  };
+  const altMixes = enrichment<AltMix[]>('altMixes',
+    v => Array.isArray(v) && v.every(m => isObj(m) && typeof m.name === 'string' && typeof m.audioUrl === 'string'),
+    'a JSON array of { id, name, type, durationSeconds, audioUrl }');
+  const stems = enrichment<StemTrack[]>('stems',
+    v => Array.isArray(v) && v.every(s => isObj(s) && typeof s.name === 'string' && typeof s.category === 'string'),
+    'a JSON array of { name, category, format }');
+  const syncMeta = enrichment<SyncMeta>('syncMeta',
+    v => isObj(v) && ['instrumentation', 'soundPalette'].every(k => v[k] === undefined || (Array.isArray(v[k]) && (v[k] as unknown[]).every(x => typeof x === 'string'))),
+    'a JSON object; instrumentation and soundPalette must be lists of text');
 
   if (errors.length > 0) return { input: null, trackId, status, errors, warnings };
 
@@ -291,9 +317,9 @@ export function parseTrackRow(raw: Record<string, unknown>): ParsedRow {
       masterWavKey,
       masterAiffKey,
       vocalType,
-      altMixes: parseJsonField(f.altMixes),
-      stems: parseJsonField(f.stems),
-      syncMeta: parseJsonField<SyncMeta>(f.syncMeta),
+      altMixes,
+      stems,
+      syncMeta,
     },
     trackId,
     status,

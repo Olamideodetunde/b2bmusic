@@ -32,7 +32,10 @@ This is the endpoint the Make.com scenario calls. Send one row as JSON. Keys can
 | L / M / N Standard / Commercial / Broadcast Price | `standardPrice`… | dollars (`10`, `"$1,250.00"`), $0.50–$100,000. Or send `standardPriceCents`… |
 | O Status | `status` | optional. `Draft` is refused; anything else is processed |
 | Q Track ID | `trackId` | blank = create; set = update that track |
-| — | `fullAudioUrl` | optional. The licensed full-length file, linked in the purchase receipt |
+| R Last Error | — | written by Make.com's error route; ignored by the API |
+| S Master WAV | `masterWavKey` | optional. Object key in the PRIVATE masters bucket, e.g. `masters/titan-ascent.wav` — never a URL. What buyers and subscribers download |
+| T Master AIFF | `masterAiffKey` | optional. Same, for the AIFF master |
+| — | `fullAudioUrl` | legacy: a public URL to the full file. Accepted with a warning; move the file to the masters bucket and use Master WAV instead |
 | — | `altMixes`, `stems`, `syncMeta` | optional JSON enrichment (see `src/lib/db/types.ts`) |
 
 `Live URL` (P) is ignored on input.
@@ -151,3 +154,20 @@ Before deleting an alias, check that nothing still calls it:
 - Make.com: HTTP module → URL.
 - Stripe: Developers → Webhooks → endpoint URL.
 - `GET /api/publish-log`: shows recent calls.
+
+## Account & download endpoints (website, cookie-authenticated)
+
+These are called by the site itself, not by Make.com. Full behaviour: [audio-and-access.md](audio-and-access.md).
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/auth/request-link` `{ email, next }` | Emails a one-time sign-in link (20 min). Never returns the link in production |
+| `GET /api/auth/verify?token=…&next=…` | The link in that email: signs the browser in |
+| `POST /api/auth/logout` | Signs out |
+| `GET /api/auth/stripe-return?session_id=…` | Stripe's success redirect: records the order/subscription; signs in only if the browser is already the paying email, otherwise emails a sign-in link |
+| `GET /api/me` | Who is signed in, `isSubscribed`, licensed track IDs, `hasBillingAccount`, and the subscription `plan` |
+| `POST /api/subscribe` | Starts a Stripe subscription checkout |
+| `POST /api/billing-portal` | Opens Stripe's customer portal |
+| `GET /api/download/:trackId?format=wav\|aiff` | Authorised master download → 60-second signed URL (session, or a signed `?token=` receipt link) |
+
+`POST` endpoints reject cross-site requests (Origin check). The Stripe webhook also handles `customer.subscription.created/updated/deleted` (subscription state) and `charge.refunded` (revokes a license).

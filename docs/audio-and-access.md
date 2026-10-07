@@ -73,7 +73,7 @@ For every `.wav`, `.aif`, `.aiff` or `.flac` file in `--in`, the script:
 - Supply your own voice ident with `--watermark ident.wav`, or set `WATERMARK_FILE`, e.g. a voice saying the brand name.
 - It must be shorter than the repeat interval.
 - Without one, the script uses a soft built-in two-note chime.
-- Tune it with `--every` (5–60 s), `--offset`, `--gain` (dB, default −10) and `--bitrate`.
+- Tune it with `--every` (10–15 s, per the brief), `--offset`, `--gain` (dB, default −10) and `--bitrate`.
 
 **FFmpeg.**
 
@@ -95,12 +95,13 @@ There are no passwords.
 2. `POST /api/auth/request-link` emails a one-time link through Brevo. The link expires in 20 minutes, and each email can request at most 5 links per hour.
 3. `GET /api/auth/verify` sets a signed, `httpOnly` session cookie that lasts 30 days.
 
-**Buyers are signed in automatically after checkout.** `GET /api/auth/stripe-return` checks the Checkout Session with Stripe and signs the buyer in as the email they paid with. This only works within 2 hours of checkout.
+**After checkout.** `GET /api/auth/stripe-return` checks the Checkout Session with Stripe and records the order or subscription straight away. It does **not** sign the browser in as the checkout email, because that address is typed at Stripe and unverified: trusting it would let anyone buy a $10 track as someone else's email and take over their account. If the browser is already signed in as the paying email, everything unlocks immediately; otherwise a one-time sign-in link is emailed to the paying address.
 
 Implementation details:
 
 - Only a SHA-256 hash of each link token is stored.
-- `SESSION_SECRET` (at least 32 characters) signs cookies and receipt links. Changing it signs everyone out.
+- `SESSION_SECRET` (at least 32 random characters) signs cookies and receipt links, and is **required in production**: without it sign-in is disabled (503) rather than running on a guessable key. Changing it signs everyone out.
+- In production, sign-in also needs `BREVO_API_KEY`; the link is only ever delivered by email.
 - The endpoint answers the same way whether or not an account exists, so it can't be used to discover customers.
 - Post-login redirects must be same-site paths, which prevents open redirects.
 - In development without `BREVO_API_KEY`, the sign-in modal shows the link instead of emailing it.
