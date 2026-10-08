@@ -49,3 +49,6 @@ coverage/
 *.aac
 *.dump
 *.sql.gz
+
+# Demo sheet copy with real master keys (unguessable keys = access to the masters)
+fixtures/*.local.xlsx

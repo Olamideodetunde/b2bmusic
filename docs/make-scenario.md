@@ -34,7 +34,7 @@ This scenario publishes every Google Sheet row whose **Status = Ready**, then wr
 | Filter | `Status` · *Equal to* · `Ready` |
 | Maximum number of returned rows | `50` (per run; the schedule picks up the rest) |
 
-> ⚠️ **Filter on `Ready`, never on `Published`.** *Published* is what the scenario writes back after success, not the trigger. Watching *Published* reprocesses edited rows and is how duplicate pages get created (see the sheet's "How to use" tab).
+> ⚠️ **Filter on `Ready`, never on `Published`.** *Published* is what the scenario writes back after success, not the trigger. Watching *Published* reprocesses edited rows and is how duplicate pages get created.
 
 **Schedule:** every 15 minutes, or run on demand during bulk publishing. Search Rows is used instead of "Watch Rows" because Watch Rows only sees *new* rows. An edited row that goes back to *Ready* would be missed.
 

@@ -134,7 +134,12 @@ async function main() {
       const previewName = `${slug}-${createHash('sha256').update(buf).digest('hex').slice(0, 10)}.mp3`;
       await fs.rename(tmpPreview, path.join(dirs.previews, previewName));
 
-      const keys = { preview: `previews/${previewName}`, wav: `masters/${slug}.wav`, aiff: aiff ? `masters/${slug}.aiff` : '' };
+      // Master keys carry a 128-bit content hash, so they can't be guessed even if the bucket
+      // is public (e.g. masters and previews sharing one Backblaze bucket). The key only lives
+      // in the database and the signed download route. Same file → same key on a re-run.
+      const masterKey = async (file: string, ext: string) =>
+        `masters/${slug}-${createHash('sha256').update(await fs.readFile(file)).digest('hex').slice(0, 32)}.${ext}`;
+      const keys = { preview: `previews/${previewName}`, wav: await masterKey(wav, 'wav'), aiff: aiff ? await masterKey(aiff, 'aiff') : '' };
       let audioUrl = path.join(dirs.previews, previewName);
       if (opt.upload) {
         const { mastersBucket, previewsBucket } = storageConfig();

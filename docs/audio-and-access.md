@@ -30,6 +30,8 @@ This covers how audio is stored, how previews are watermarked, and who can downl
 | Masters | **Private** (no public access, no bucket policy) | 24-bit WAV and AIFF, untouched | `S3_MASTERS_BUCKET` |
 | Previews | Public read, ideally behind a CDN | 128 kbps watermarked MP3s | `S3_PREVIEWS_BUCKET`, `PREVIEW_PUBLIC_BASE_URL` |
 
+**One public bucket instead of two** (the current Backblaze setup: `b2bmusic` holds `previews/` and `masters/`): set `S3_MASTERS_BUCKET` and `S3_PREVIEWS_BUCKET` to the same bucket and `PREVIEW_PUBLIC_BASE_URL=https://f005.backblazeb2.com/file/<bucket>`. Masters then stay protected only because their keys are unguessable (`masters/<slug>-<32-hex content hash>.wav`) and B2 doesn't allow anonymous listing — so never put a master key anywhere public, and prefer two buckets when possible.
+
 Amazon S3 and Backblaze B2 both work, through the same code (B2 exposes an S3-compatible API).
 
 - **Amazon S3:** set `S3_REGION` (for example `us-east-1`) and leave `S3_ENDPOINT` empty.
@@ -65,7 +67,7 @@ For every `.wav`, `.aif`, `.aiff` or `.flac` file in `--in`, the script:
 | Manifest column | Sheet column |
 |---|---|
 | Audio URL | J · Audio URL (the watermarked preview) |
-| Master WAV | Master WAV (new column), e.g. `masters/titan-ascent.wav` |
+| Master WAV | Master WAV (new column), e.g. `masters/titan-ascent-3f9c…e1.wav` (slug + content hash) |
 | Master AIFF | Master AIFF (new column) |
 
 **The watermark.**
