@@ -59,6 +59,7 @@ function StemsPanel({ track }: { track: Track }) {
                 <button
                   onClick={() => setMuted(m => (m.includes(lane) ? m.filter(x => x !== lane) : [...m, lane]))}
                   aria-pressed={muted.includes(lane)}
+                  aria-label={`Mute ${lane}`}
                   className={cn('w-6 h-6 rounded text-[10px] font-mono border transition-colors', muted.includes(lane) ? 'bg-slate-200 text-navy-950 border-slate-200' : 'border-white/10 text-slate-500 hover:text-white')}
                 >
                   M
@@ -66,6 +67,7 @@ function StemsPanel({ track }: { track: Track }) {
                 <button
                   onClick={() => setSolo(s => (s === lane ? null : lane))}
                   aria-pressed={solo === lane}
+                  aria-label={`Solo ${lane}`}
                   className={cn('w-6 h-6 rounded text-[10px] font-mono border transition-colors', solo === lane ? 'bg-brand-600 text-white border-brand-600' : 'border-white/10 text-slate-500 hover:text-white')}
                 >
                   S

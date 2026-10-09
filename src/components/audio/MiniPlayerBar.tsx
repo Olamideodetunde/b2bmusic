@@ -186,7 +186,8 @@ export function MiniPlayerBar() {
           </div>
 
           {/* Stem monitor: click the name to mute, S to solo */}
-          <div className="hidden xl:flex items-center gap-1.5 pl-[190px] min-w-0 overflow-hidden">
+          {/* Aligned under the waveform only where there's room for full-size buttons */}
+          <div className="hidden xl:flex items-center gap-1.5 2xl:pl-[190px] min-w-0 overflow-hidden">
             {STEM_BUSES.map(bus => {
               const available = busAvailable(bus);
               const muted = mutedStems.includes(bus);
@@ -195,7 +196,8 @@ export function MiniPlayerBar() {
                 <div
                   key={bus}
                   className={cn(
-                    'inline-flex items-center h-5 rounded-sm border text-[10px] font-mono uppercase tracking-wider overflow-hidden shrink-0',
+                    // 26px tall incl. the 1px border + w-6 solo button: 24×24 minimum click/touch targets (WCAG 2.5.8)
+                    'inline-flex items-center h-[26px] rounded-sm border text-[10px] font-mono uppercase tracking-wider overflow-hidden shrink-0',
                     !available && 'opacity-30 pointer-events-none',
                     solo ? 'border-brand-500/60 bg-brand-600/15' : 'border-white/[0.08] bg-white/[0.02]',
                   )}
@@ -203,10 +205,11 @@ export function MiniPlayerBar() {
                   <button
                     onClick={() => toggleStemMute(bus)}
                     className={cn(
-                      'px-1.5 h-full transition-colors',
+                      'px-2 min-w-6 h-full transition-colors',
                       muted ? 'text-navy-400 line-through' : 'text-slate-300 hover:text-white',
                     )}
                     aria-pressed={muted}
+                    aria-label={`Mute ${bus}`}
                     title={`${muted ? 'Unmute' : 'Mute'} ${bus}`}
                   >
                     {bus}
@@ -214,10 +217,11 @@ export function MiniPlayerBar() {
                   <button
                     onClick={() => toggleStemSolo(bus)}
                     className={cn(
-                      'px-1 h-full border-l border-white/[0.08] transition-colors',
+                      'w-6 h-full border-l border-white/[0.08] transition-colors',
                       solo ? 'text-brand-300 bg-brand-600/20' : 'text-navy-400 hover:text-white',
                     )}
                     aria-pressed={solo}
+                    aria-label={`Solo ${bus}`}
                     title={`Solo ${bus}`}
                   >
                     S
