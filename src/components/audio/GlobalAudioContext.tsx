@@ -70,15 +70,33 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
+    // Previews play through /api/preview, which redirects to a signed link that expires after
+    // a while. If that happens mid-session (a long pause, then play or seek), ask for a fresh
+    // link once and carry on from the same position.
+    let lastRetry = 0;
+    const handleError = () => {
+      if (!audio.src.includes('/api/preview/') || Date.now() - lastRetry < 30_000) return;
+      lastRetry = Date.now();
+      const resumeAt = audio.currentTime;
+      const url = new URL(audio.src);
+      url.searchParams.set('r', String(lastRetry));
+      audio.src = url.toString();
+      audio.addEventListener('loadedmetadata', () => {
+        audio.currentTime = resumeAt;
+        audio.play().catch(() => {});
+      }, { once: true });
+    };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('durationchange', handleDurationChange);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
+    audio.addEventListener('error', handleError);
 
     return () => {
       audio.pause();
+      audio.removeEventListener('error', handleError);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('durationchange', handleDurationChange);
       audio.removeEventListener('ended', handleEnded);

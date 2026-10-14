@@ -4,7 +4,7 @@ import { promises as fs, existsSync, readdirSync, statSync } from 'fs';
 import os from 'os';
 import path from 'path';
 import { execFileSync, spawnSync } from 'child_process';
-import { pgliteRepo, fileRepo, sampleRows } from './helpers';
+import { BACKENDS, pgliteRepo, fileRepo, sampleRows } from './helpers';
 import type { TrackRepository } from '../src/lib/db/repository';
 import { publishTrack } from '../src/lib/ingest/service';
 import { parseTrackRow } from '../src/lib/ingest/parse';
@@ -20,7 +20,7 @@ import { okFetch } from './helpers';
 
 const HOUR = 3600_000;
 
-for (const [label, make] of [['postgres (PGlite)', pgliteRepo], ['file store', fileRepo]] as const) {
+for (const [label, make] of BACKENDS) {
   describe(`accounts — ${label}`, () => {
     let repo: TrackRepository;
     let close: () => Promise<void>;

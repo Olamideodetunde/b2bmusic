@@ -28,9 +28,18 @@ This covers how audio is stored, how previews are watermarked, and who can downl
 | Bucket | Visibility | Holds | Env var |
 |---|---|---|---|
 | Masters | **Private** (no public access, no bucket policy) | 24-bit WAV and AIFF, untouched | `S3_MASTERS_BUCKET` |
-| Previews | Public read, ideally behind a CDN | 128 kbps watermarked MP3s | `S3_PREVIEWS_BUCKET`, `PREVIEW_PUBLIC_BASE_URL` |
+| Previews | **Private** (or public — either works) | 128 kbps watermarked MP3s | `S3_PREVIEWS_BUCKET`, `PREVIEW_PUBLIC_BASE_URL` |
 
-**One public bucket instead of two** (the current Backblaze setup: `b2bmusic` holds `previews/` and `masters/`): set `S3_MASTERS_BUCKET` and `S3_PREVIEWS_BUCKET` to the same bucket and `PREVIEW_PUBLIC_BASE_URL=https://f005.backblazeb2.com/file/<bucket>`. Masters then stay protected only because their keys are unguessable (`masters/<slug>-<32-hex content hash>.wav`) and B2 doesn't allow anonymous listing — so never put a master key anywhere public, and prefer two buckets when possible.
+**Previews are played through signed links.** Pages never contain a storage URL: every track's
+audio is `/api/preview/<trackId>` (`?mix=<id>` for alt mixes). That route checks the track is
+published and redirects to a signed link to the preview that expires after 15 minutes, so
+preview links can't be scraped from the HTML, shared, or hot-linked (cross-site requests get 403;
+each visitor is limited to 90 requests a minute). The player asks again if a link expires mid-session.
+`PREVIEW_PUBLIC_BASE_URL` is still needed: the sheet's Audio URL must start with it, and the site
+uses it to work out each preview's object key. The publish-time Audio URL check reads the object
+with the storage credentials, so it works on a private bucket.
+
+**One bucket for both** (the current Backblaze setup: `b2bmusic` holds `previews/` and `masters/`): set `S3_MASTERS_BUCKET` and `S3_PREVIEWS_BUCKET` to the same bucket and `PREVIEW_PUBLIC_BASE_URL=https://f005.backblazeb2.com/file/<bucket>`. Keep that bucket **Private**: everything is then reachable only through signed links. (If it is public, masters are protected only by their unguessable keys, `masters/<slug>-<32-hex content hash>.wav`.)
 
 Amazon S3 and Backblaze B2 both work, through the same code (B2 exposes an S3-compatible API).
 

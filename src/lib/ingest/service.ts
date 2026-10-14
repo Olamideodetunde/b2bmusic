@@ -5,6 +5,7 @@ import { parseTrackRow, type FieldError } from './parse';
 import { generateSlug, makeUniqueSlug } from '../seo/slugify';
 import { bpmBandFor } from '../catalog/taxonomy';
 import { getSiteUrl, toSlug } from '../utils';
+import { checkStoredPreview } from '../storage/preview';
 
 /**
  * Publish pipeline for one Google Sheet row (called by Make.com via POST /api/tracks).
@@ -60,6 +61,9 @@ function reject(httpStatus: 400 | 404 | 409 | 422, errors: FieldError[], warning
 /** Verifies the preview MP3 actually resolves — the most common cause of Status = Error. */
 export async function checkAudioUrl(url: string, fetchImpl: typeof fetch = fetch): Promise<string | null> {
   if (url.startsWith('/')) return null; // site-relative asset, served from /public
+  // Our own previews bucket may be private: check the object with the storage credentials.
+  const stored = await checkStoredPreview(url);
+  if (stored !== undefined) return stored;
   const attempt = async (method: 'HEAD' | 'GET') => {
     const res = await fetchImpl(url, {
       method,

@@ -52,3 +52,9 @@ coverage/
 
 # Demo sheet copy with real master keys (unguessable keys = access to the masters)
 fixtures/*.local.xlsx
+
+# Shared-hosting packages (npm run build:standalone)
+/dist/
+
+# MySQL import files (npm run db:copy-to-mysql -- --sql-file …) contain customer data
+/*.sql

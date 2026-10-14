@@ -1,23 +1,31 @@
 import { Pool } from 'pg';
+import type { Pool as MysqlPool } from 'mysql2/promise';
 import type { Track } from './types';
 import type { TrackRepository } from './repository';
 import { PostgresRepository } from './postgres';
+import { MysqlRepository } from './mysql';
+import { createMysqlPool, isMysqlUrl } from './mysql-pool';
 import { FileRepository } from './file-store';
 import { toSlug } from '../utils';
+import { previewPath } from '../audio/preview-path';
 import type { BpmBand } from '../catalog/taxonomy';
 
 /**
  * Storage selection:
- *   DATABASE_URL set  → Postgres (Neon in production; use the *pooled* connection string)
+ *   DATABASE_URL mysql://… or mariadb://… → MySQL / MariaDB (e.g. cPanel shared hosting)
+ *   DATABASE_URL any other value → Postgres (Neon in production; use the *pooled* connection string)
  *   DATABASE_URL unset → local JSON store in .data/ (development only)
  */
-const globalForDb = globalThis as unknown as { __b2bPool?: Pool; __b2bRepo?: TrackRepository };
+const globalForDb = globalThis as unknown as { __b2bPool?: Pool; __b2bMysql?: MysqlPool; __b2bRepo?: TrackRepository };
 
 export function getRepository(): TrackRepository {
   if (globalForDb.__b2bRepo) return globalForDb.__b2bRepo;
 
   const url = process.env.DATABASE_URL;
-  if (url) {
+  if (url && isMysqlUrl(url)) {
+    globalForDb.__b2bMysql ??= createMysqlPool(url);
+    globalForDb.__b2bRepo = new MysqlRepository(globalForDb.__b2bMysql);
+  } else if (url) {
     // Reused across hot reloads and warm serverless invocations.
     globalForDb.__b2bPool ??= new Pool({ connectionString: url, max: 5, idleTimeoutMillis: 10_000 });
     globalForDb.__b2bRepo = new PostgresRepository(globalForDb.__b2bPool);
@@ -43,6 +51,10 @@ const PRIVATE_FIELDS = ['fullAudioUrl', 'masterWavKey', 'masterAiffKey'] as cons
 export function toPublicTrack(track: Track): Track {
   const copy = { ...track };
   for (const key of PRIVATE_FIELDS) delete copy[key];
+  // Audio is played through /api/preview, which hands out short-lived signed links — so the
+  // storage URLs of previews never appear in pages (and the bucket can stay private).
+  copy.previewAudioUrl = previewPath(track.id);
+  copy.altMixes = (track.altMixes ?? []).map(m => ({ ...m, audioUrl: previewPath(track.id, m.id) }));
   return copy;
 }
 

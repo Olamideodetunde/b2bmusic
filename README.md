@@ -15,7 +15,7 @@ Google Sheet ──(Status = Ready)──▶ Make.com ──POST /api/tracks─�
 | Website engine | Next.js 14 (App Router) | `src/app` |
 | Publishing | On-demand Incremental Static Regeneration | `src/lib/api/publish-handler.ts` |
 | Data entry | Google Sheets ("Track Index" tab) | sample: `fixtures/sample-track-index.csv` |
-| Database | Neon Postgres (any Postgres works, e.g. Railway) | `db/migrations`, `src/lib/db` |
+| Database | Neon Postgres (any Postgres works, e.g. Railway), or MySQL / MariaDB for shared hosting | `db/migrations`, `db/migrations-mysql`, `src/lib/db` |
 | Automation | Make.com | [docs/make-scenario.md](docs/make-scenario.md) |
 | Hosting | Vercel | — |
 | Email | Brevo (publish alerts, purchase receipts) | `src/lib/email/brevo.ts` |
@@ -24,7 +24,7 @@ Google Sheet ──(Status = Ready)──▶ Make.com ──POST /api/tracks─�
 | Audio storage | Amazon S3 or Backblaze B2 — private masters, public watermarked previews | `src/lib/storage`, `src/app/api/download` |
 | Watermarking | FFmpeg (bundled via `ffmpeg-static`) | `scripts/watermark-catalog.ts`, `src/lib/audio` |
 
-More docs: **[Audio protection, subscriptions & downloads](docs/audio-and-access.md)** · **[API reference](docs/api.md)** · **[Make.com scenario](docs/make-scenario.md)** · **[Keyword index guide](docs/MASTER_KEYWORD_PIPELINE.md)** · **[Production cutover](docs/cutover.md)** (upgrading the existing Neon database)
+More docs: **[Audio protection, subscriptions & downloads](docs/audio-and-access.md)** · **[API reference](docs/api.md)** · **[Make.com scenario](docs/make-scenario.md)** · **[Keyword index guide](docs/MASTER_KEYWORD_PIPELINE.md)** · **[Production cutover](docs/cutover.md)** (upgrading the existing Neon database) · **[MySQL / shared hosting](docs/mysql.md)**
 
 ---
 
@@ -64,7 +64,9 @@ Step 3 writes `fixtures/sample-track-index.results.csv` with the write-back colu
 | `npm run dev` / `build` / `start` | Next.js |
 | `npm test` | 76 tests: sheet parsing, API auth, accounts & access rules, the real FFmpeg watermark pipeline, SEO helpers, backup restore and the full publish rules, run against real Postgres (PGlite, using the production migrations) **and** the local store |
 | `npm run typecheck` | TypeScript |
-| `npm run db:migrate` | Applies `db/migrations/*.sql` to `DATABASE_URL`. Idempotent — run on every deploy |
+| `npm run db:migrate` | Applies `db/migrations/*.sql` (Postgres) or `db/migrations-mysql/*.sql` (when `DATABASE_URL` is `mysql://…`) to `DATABASE_URL`. Idempotent — run on every deploy |
+| `npm run db:copy-to-mysql` | One-off move from Neon to MySQL, keeping IDs: `--to mysql://…` or `--sql-file out.sql` for phpMyAdmin. See [docs/mysql.md](docs/mysql.md) |
+| `npm run build:standalone` | Self-contained Node build for shared hosting: `-- --site-url https://your-domain.com` → `dist/<domain>-standalone.zip` |
 | `npm run db:seed` | Loads the demo catalog through the publish pipeline into the local store. Refuses a Postgres `DATABASE_URL` unless `SEED_DATABASE=yes` (it could overwrite live tracks) |
 | `npm run audio:watermark -- --in <folder> [--aiff] [--upload]` | Builds 128 kbps watermarked previews + masters and uploads them to the buckets ([details](docs/audio-and-access.md#2-watermarking-the-catalog-ffmpeg)) |
 | `npm run db:restore -- <backup.json>` | Loads a JSON backup into a new side table for inspection or recovery (see [cutover](docs/cutover.md#rollback)) |

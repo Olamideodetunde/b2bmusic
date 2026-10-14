@@ -119,7 +119,11 @@ async function main() {
 
       // Masters: keep a WAV as-is; convert other formats losslessly to 24-bit WAV.
       const wav = path.join(dirs.masters, `${slug}.wav`);
-      if (path.extname(file).toLowerCase() === '.wav') await fs.copyFile(src, wav);
+      if (path.extname(file).toLowerCase() === '.wav') {
+        // Hard link when possible (same disk): identical file, no extra space for a large catalog.
+        await fs.rm(wav, { force: true });
+        await fs.link(src, wav).catch(() => fs.copyFile(src, wav));
+      }
       else await ffmpeg(masterArgs(src, wav, 'wav'));
       const aiff = opt.aiff ? path.join(dirs.masters, `${slug}.aiff`) : null;
       if (aiff) await ffmpeg(masterArgs(src, aiff, 'aiff'));

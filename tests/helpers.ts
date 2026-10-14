@@ -7,6 +7,9 @@ import { FileRepository } from '../src/lib/db/file-store';
 import { runMigrations } from '../src/lib/db/migrate';
 import { parseCsv } from '../src/lib/ingest/csv';
 import type { TrackRepository } from '../src/lib/db/repository';
+import { MysqlRepository } from '../src/lib/db/mysql';
+import { createMysqlPool } from '../src/lib/db/mysql-pool';
+import { runMysqlMigrations } from '../src/lib/db/migrate-mysql';
 
 /** Real Postgres (WASM) with the production migrations applied — verifies the Neon SQL. */
 export async function pgliteRepo(): Promise<{ repo: TrackRepository; close: () => Promise<void> }> {
@@ -20,6 +23,35 @@ export async function pgliteRepo(): Promise<{ repo: TrackRepository; close: () =
     close: () => db.close(),
   };
 }
+
+/**
+ * Real MySQL / MariaDB with db/migrations-mysql applied, in a throwaway database that is
+ * dropped afterwards. Only used when MYSQL_TEST_URL points at a server (no database in
+ * the path), e.g. MYSQL_TEST_URL=mysql://root@127.0.0.1:3407 npm test
+ */
+export async function mysqlRepo(): Promise<{ repo: TrackRepository; close: () => Promise<void> }> {
+  const server = (process.env.MYSQL_TEST_URL || '').replace(/\/+$/, '');
+  const name = `b2b_test_${process.pid}_${Math.random().toString(36).slice(2, 8)}`;
+  const admin = createMysqlPool(`${server}/`, 1);
+  await admin.query(`CREATE DATABASE \`${name}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+  const pool = createMysqlPool(`${server}/${name}`, 2);
+  await runMysqlMigrations(pool);
+  return {
+    repo: new MysqlRepository(pool),
+    close: async () => {
+      await pool.end();
+      await admin.query(`DROP DATABASE \`${name}\``);
+      await admin.end();
+    },
+  };
+}
+
+/** Storage backends every repository test runs against. */
+export const BACKENDS = [
+  ['postgres (PGlite)', pgliteRepo],
+  ['file store', fileRepo],
+  ...(process.env.MYSQL_TEST_URL ? ([['mysql', mysqlRepo]] as const) : []),
+] as const;
 
 /** Local file store pointed at an empty temp file (never touches .data/). */
 export async function fileRepo(): Promise<{ repo: TrackRepository; close: () => Promise<void> }> {

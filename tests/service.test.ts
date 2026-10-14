@@ -2,13 +2,13 @@ import { describe, test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { publishTrack } from '../src/lib/ingest/service';
 import type { TrackRepository } from '../src/lib/db/repository';
-import { fileRepo, notFoundFetch, okFetch, pgliteRepo, sampleRows } from './helpers';
+import { BACKENDS, fileRepo, notFoundFetch, okFetch, pgliteRepo, sampleRows } from './helpers';
 
 /**
  * The publish rules from the sheet's "How to use" tab, run against BOTH storage
  * backends so Postgres (Neon) and the local file store can never drift apart.
  */
-for (const [name, make] of [['postgres (PGlite)', pgliteRepo], ['file store', fileRepo]] as const) {
+for (const [name, make] of BACKENDS) {
   describe(`publish pipeline — ${name}`, () => {
     let repo: TrackRepository;
     let close: () => Promise<void>;

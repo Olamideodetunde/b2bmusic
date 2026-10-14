@@ -6,7 +6,7 @@ import type { DownloadVia, MasterFormat, Order, PublishEvent, Subscription, Trac
  * local-file implementations can never disagree on behaviour.
  */
 export interface TrackRepository {
-  readonly kind: 'postgres' | 'file';
+  readonly kind: 'postgres' | 'mysql' | 'file';
 
   listPublished(): Promise<Track[]>;
   findById(id: number): Promise<Track | null>;
