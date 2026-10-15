@@ -58,3 +58,6 @@ fixtures/*.local.xlsx
 
 # MySQL import files (npm run db:copy-to-mysql -- --sql-file …) contain customer data
 /*.sql
+
+# The spoken preview watermark (a 3 s brand ident, not music) is needed by npm run audio:watermark
+!assets/watermark/*.wav

@@ -13,13 +13,18 @@
  *
  * Options:
  *   --out <dir>          working folder (default .audio-build/, gitignored)
- *   --watermark <file>   your voice ident / sound (default: WATERMARK_FILE, else a built-in chime)
- *   --every <s>          seconds between watermarks, 10–15 (default 12)
- *   --offset <s>         first watermark after this many seconds (default 3)
- *   --gain <dB>          watermark level, e.g. -10 (default -10)
+ *   --watermark <file>   your voice ident / sound (default: WATERMARK_FILE, else assets/watermark/voice-tag.wav)
+ *   --chime              use the built-in two-note chime instead of the voice tag
+ *   --every <s>          seconds between watermarks, 10–15 (default 10)
+ *   --offset <s>         first watermark after this many seconds (default 2)
+ *   --gain <dB>          watermark level (default 0 for the voice tag, -10 for the chime)
  *   --bitrate <kbps>     preview bitrate (default 128)
  *   --aiff               also produce AIFF masters
+ *   --no-duck            don't dip the music under each tag (by default it dips, so the tag can't be
+ *                        missed, EQ'd out, or ignored in a screen recording of the preview)
+ *   --duck-db <dB>       how far the music dips under the tag (default 12)
  *   --upload             upload to the buckets (needs the S3_* variables; see docs/audio-and-access.md)
+ *   --previews-only      with --upload: upload only the previews (re-watermarking an uploaded catalog)
  *
  * FFmpeg comes from the ffmpeg-static package, or FFMPEG_PATH.
  */
@@ -35,6 +40,8 @@ import {
 import { isStorageConfigured, previewUrl, putObject, storageConfig } from '../src/lib/storage/s3';
 import { toCsv } from '../src/lib/ingest/csv';
 
+const VOICE_TAG = path.join(process.cwd(), 'assets', 'watermark', 'voice-tag.wav');
+
 const AUDIO_EXT = new Set(['.wav', '.aif', '.aiff', '.flac']);
 
 function args() {
@@ -47,15 +54,21 @@ function args() {
   return {
     input: val('in'),
     out: val('out') ?? '.audio-build',
-    watermark: val('watermark') ?? process.env.WATERMARK_FILE,
+    // The spoken "Global B to B Audio. Preview." ident, unless another file or the chime is asked for.
+    watermark: a.includes('--chime') ? undefined : val('watermark') ?? process.env.WATERMARK_FILE ?? VOICE_TAG,
     upload: a.includes('--upload'),
+    // Re-watermark an uploaded catalog: upload only the new previews (master keys are content
+    // hashes, so they are unchanged and already in the bucket).
+    previewsOnly: a.includes('--previews-only'),
     aiff: a.includes('--aiff'),
     options: {
       ...DEFAULT_WATERMARK,
-      everySeconds: num('every', DEFAULT_WATERMARK.everySeconds),
-      offsetSeconds: num('offset', DEFAULT_WATERMARK.offsetSeconds),
-      gainDb: num('gain', DEFAULT_WATERMARK.gainDb),
+      everySeconds: num('every', 10),
+      offsetSeconds: num('offset', 2),
+      gainDb: num('gain', a.includes('--chime') ? DEFAULT_WATERMARK.gainDb : 0),
       bitrateKbps: num('bitrate', DEFAULT_WATERMARK.bitrateKbps),
+      // Length is filled in once the tag has been probed.
+      duck: a.includes('--no-duck') ? undefined : { db: num('duck-db', 12), seconds: 0 },
       comment: `Watermarked preview - ${BRAND.wordmark}`,
     } satisfies WatermarkOptions,
   };
@@ -100,6 +113,7 @@ async function main() {
   const tag = opt.watermark ?? path.join(dirs.tmp, 'default-chime.wav');
   if (!opt.watermark) await ffmpeg(defaultTagArgs(tag));
   const tagInfo = await probe(tag);
+  if (opt.options.duck) opt.options.duck.seconds = tagInfo.durationSeconds;
   if (tagInfo.durationSeconds >= opt.options.everySeconds - 1) {
     throw new Error(`The watermark is ${tagInfo.durationSeconds.toFixed(1)} s long — it must be shorter than --every (${opt.options.everySeconds} s) minus 1 s.`);
   }
@@ -147,8 +161,10 @@ async function main() {
       let audioUrl = path.join(dirs.previews, previewName);
       if (opt.upload) {
         const { mastersBucket, previewsBucket } = storageConfig();
-        await putObject(mastersBucket, keys.wav, await fs.readFile(wav), 'audio/wav');
-        if (aiff) await putObject(mastersBucket, keys.aiff, await fs.readFile(aiff), 'audio/aiff');
+        if (!opt.previewsOnly) {
+          await putObject(mastersBucket, keys.wav, await fs.readFile(wav), 'audio/wav');
+          if (aiff) await putObject(mastersBucket, keys.aiff, await fs.readFile(aiff), 'audio/aiff');
+        }
         await putObject(previewsBucket, keys.preview, buf, 'audio/mpeg', 'public, max-age=31536000, immutable');
         audioUrl = previewUrl(keys.preview);
       }

@@ -219,6 +219,36 @@ test('FFmpeg pipeline: 128 kbps preview with a watermark every 12 s', { skip: !f
   }
 });
 
+test('FFmpeg pipeline: the music dips ~12 dB under each tag (duck), and only there', { skip: !ffmpegWorks && 'FFmpeg binary unavailable' }, async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'gb2b-duck-'));
+  try {
+    const master = path.join(dir, 'master.wav');
+    await ffmpeg(['-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=220:sample_rate=44100:duration=25', '-ac', '2', '-c:a', 'pcm_s24le', master]);
+    await ffmpeg(defaultTagArgs(path.join(dir, 'tag.wav')));
+    await ffmpeg(tagBedArgs(path.join(dir, 'tag.wav'), path.join(dir, 'bed.wav'), 10));
+    const preview = path.join(dir, 'preview.mp3');
+    const opts = { ...DEFAULT_WATERMARK, everySeconds: 10, offsetSeconds: 2, gainDb: 0, duck: { db: 12, seconds: 0.5 } };
+    await ffmpeg(previewArgs(master, path.join(dir, 'bed.wav'), preview, opts));
+    assert.ok(Math.abs((await probe(preview)).durationSeconds - 25) < 0.2);
+
+    // Below 500 Hz there is only the 220 Hz "music" (the chime is > 1 kHz): measure it per 0.25 s.
+    const { stderr: out } = spawnSync(ffmpegPath(), ['-hide_banner', '-i', preview, '-af',
+      'lowpass=f=500,lowpass=f=500,asetnsamples=n=11025,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level',
+      '-f', 'null', '-'], { encoding: 'utf8' });
+    const level = (t: number) => {
+      const frames = [...out.matchAll(/pts_time:([\d.]+)[\s\S]*?RMS_level=(-?[\d.]+|-inf)/g)].map(m => ({ t: Number(m[1]), db: Number(m[2]) }));
+      return frames.reduce((a, b) => (Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a)).db;
+    };
+    for (const tagAt of [2, 12, 22]) {
+      const dip = level(7) - level(tagAt + 0.25); // 7 s is between tags, at full level
+      assert.ok(dip > 10 && dip < 14, `music dips ~12 dB under the tag at ${tagAt}s (got ${dip.toFixed(1)})`);
+    }
+    assert.ok(Math.abs(level(7) - level(17)) < 0.5, 'full level between tags');
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('no audio files are committed to the site (they belong in object storage)', () => {
   const found: string[] = [];
   const walk = (dir: string) => {

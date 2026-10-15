@@ -81,10 +81,12 @@ For every `.wav`, `.aif`, `.aiff` or `.flac` file in `--in`, the script:
 
 **The watermark.**
 
-- Supply your own voice ident with `--watermark ident.wav`, or set `WATERMARK_FILE`, e.g. a voice saying the brand name.
-- It must be shorter than the repeat interval.
-- Without one, the script uses a soft built-in two-note chime.
-- Tune it with `--every` (10–15 s, per the brief), `--offset`, `--gain` (dB, default −10) and `--bitrate`.
+- **Default:** a spoken "Global B to B Audio. Preview." (`assets/watermark/voice-tag.wav`) every **10 s**, first at 2 s, at full level, with the music **dipped 12 dB** under each tag (0.15 s fades). That makes a screen or speaker recording of a preview useless for real work; between tags the music is untouched.
+- Supply your own voice ident with `--watermark ident.wav`, or set `WATERMARK_FILE` (e.g. a recorded brand voiceover). It must be shorter than the repeat interval minus 1 s.
+- `--chime` uses the old soft two-note chime instead; `--no-duck` turns the dip off; `--duck-db` sets its depth.
+- Tune with `--every` (10–15 s, per the brief), `--offset`, `--gain` (dB) and `--bitrate`.
+- Masters are never watermarked: buyers and subscribers download the untouched files.
+- To re-watermark an uploaded catalog without touching masters, run with `--upload --previews-only` (new preview names → update the sheet's Audio URL column), or overwrite the existing preview objects in place so the Audio URLs stay valid (as done for the October 2026 batch).
 
 **FFmpeg.**
 

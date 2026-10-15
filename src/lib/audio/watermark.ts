@@ -19,6 +19,12 @@ export interface WatermarkOptions {
   offsetSeconds: number;
   /** Tag level relative to its source, in dB (negative = quieter). */
   gainDb: number;
+  /**
+   * Dip the music by `db` for `seconds` (the tag's length) at every tag, with short fades,
+   * so a voice ident is clearly heard over loud passages and a screen/audio recording of
+   * the preview is unusable. Off by default.
+   */
+  duck?: { db: number; seconds: number };
   /** MP3 bitrate for previews. */
   bitrateKbps: number;
   /** Text written to the MP3's comment tag. */
@@ -74,16 +80,37 @@ export function tagBedArgs(tag: string, out: string, everySeconds: number): stri
   ];
 }
 
+/** FFmpeg volume expression for the timed dip under each tag (see WatermarkOptions.duck). */
+export function duckExpr(o: WatermarkOptions): string {
+  if (!o.duck) return '1';
+  const ramp = 0.15;
+  const floor = Math.pow(10, -Math.abs(o.duck.db) / 20).toFixed(4);
+  const L = o.duck.seconds.toFixed(3);
+  const u = `mod(t-${o.offsetSeconds}+${ramp},${o.everySeconds})`;
+  const w = `max(0,min(1,min(${u}/${ramp},(${L}+${2 * ramp}-${u})/${ramp})))`;
+  return `1-(1-${floor})*${w}`; // used inside single quotes in the graph, so commas are safe
+}
+
 /** Master + looped tag bed → watermarked MP3 preview. */
 export function previewArgs(master: string, tagBed: string, out: string, o: WatermarkOptions): string[] {
   const delayMs = Math.round(o.offsetSeconds * 1000);
-  const graph = [
-    `[0:a]${STEREO}[m]`,
-    `[1:a]${STEREO},volume=${o.gainDb}dB,adelay=delays=${delayMs}:all=1[wm]`,
-    // normalize=0 keeps the music at its original level (amix would otherwise halve it);
-    // the limiter catches any peak the tag adds. level=false stops it from raising loudness.
-    `[m][wm]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,alimiter=limit=0.97:level=false[out]`,
-  ].join(';');
+  const graph = (o.duck
+    ? [
+        // Timed dip: full level, a 0.15 s fade down to `db` just before each tag, held for the
+        // tag, then a 0.15 s fade back. u is the position inside the current repeat period,
+        // shifted so the window starts at 0; w(u) is the 0→1→0 trapezoid.
+        `[0:a]${STEREO},volume=eval=frame:volume='${duckExpr(o)}'[m]`,
+        `[1:a]${STEREO},volume=${o.gainDb}dB,adelay=delays=${delayMs}:all=1[wm]`,
+        `[m][wm]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,alimiter=limit=0.97:level=false[out]`,
+      ]
+    : [
+        `[0:a]${STEREO}[m]`,
+        `[1:a]${STEREO},volume=${o.gainDb}dB,adelay=delays=${delayMs}:all=1[wm]`,
+        // normalize=0 keeps the music at its original level (amix would otherwise halve it);
+        // the limiter catches any peak the tag adds. level=false stops it from raising loudness.
+        `[m][wm]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,alimiter=limit=0.97:level=false[out]`,
+      ]
+  ).join(';');
   return [
     '-y', '-hide_banner', '-loglevel', 'error',
     '-i', master,
